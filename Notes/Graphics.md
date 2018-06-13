@@ -16,5 +16,5 @@
 - `World Space` 自然空间，多个网格通过在自然空间中定位和定向组成一个完整的场景
 - `Mesh Instancing` 物体的三角网格的顶点从模型空间变换到自然空间
 - `Light-Object Interactions` 光在可以被吸收、反射（漫射或镜面反射）、衍射（一般不考虑）、散射、折射
-- `Color Model` 
-- `Color Space` 
+- `Color Model` 用三元组或四元组表示色彩的数学模型
+- `Color Space` 色彩模型所能定义的色彩范围即色彩空间、色域
