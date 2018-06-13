@@ -24,7 +24,7 @@
   - `Vertex tangent and bitangent` 与顶点法线一起两两垂直，构成一个坐标系`tangent space`（切线空间），用于逐像素照明计算
   - `Diffuse color` 漫射色
   - `Specular color` 高光反射色
-  - `Texture coordinates` 纹理坐标，用于将二维或三位位图映射到网格表面上（`texture mapping`），描述顶点在纹理的二维归一化坐标空间中的位置
+  - `Texture coordinates` 纹理坐标，用于将二维或三维位图映射到网格表面上（`texture mapping`），描述顶点在纹理的二维归一化坐标空间中的位置
   - `Skinning weights` 蒙皮权重,一个顶点受连接骨骼的多个关节影响
 - `Vertext Formats` 保存的顶点属性的数据结构的布局
 - `Attribute Interpolation` 渲染三角形基于逐像素而不是逐顶点,所以需要对顶点属性进行插值得到内部点的属性
