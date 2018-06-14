@@ -2,6 +2,8 @@
 
 ## Depth-Buffered Triangle Rasterization
 
+### Describing a Scene
+
 - `Triangle Mesh` 三角网格，用于模拟复杂物体表面
   - `Winding Order` 三角形绕序，顺时针或者逆时针
   - `Triangle Lists` 三角形列表构成三角网格
@@ -15,21 +17,45 @@
 - `Model Space` 模型空间、本地空间、物体空间，网格顶点在物体本地的坐标系中表示
 - `World Space` 自然空间，多个网格通过在自然空间中定位和定向组成一个完整的场景
 - `Mesh Instancing` 物体的三角网格的顶点从模型空间变换到自然空间
-- `Light-Object Interactions` 光在可以被吸收、反射（漫射和镜面反射）、衍射（一般不考虑）、散射、折射
+
+### Describing the Visual Properties of a Surface
+
+- `Light-Object Interactions` 光在可以被吸收、反射（漫反射和镜面反射）、衍射（一般不考虑）、散射、折射
 - `Color Model` 用三元组或四元组表示色彩的数学模型
 - `Color Space` 色彩模型所能定义的色彩范围即色彩空间、色域
 - `Vertex Attributes` 顶点属性可以用来描述物体表面的视觉特性
   - `Position vector` 顶点在模型空间的位置
   - `Vertex normal` 顶点处的单位表面法线
-  - `Vertex tangent and bitangent` 与顶点法线一起两两垂直，构成一个坐标系`tangent space`（切线空间），用于逐像素照明计算
-  - `Diffuse color` 漫射色
+  - `Vertex tangent and bitangent` 与顶点法线一起两两垂直，构成一个坐标系 `tangent space`（切线空间），用于逐像素照明计算
+  - `Diffuse color` 漫反射色
   - `Specular color` 高光反射色
-  - `Texture coordinates` 纹理坐标，用于将二维或三维位图映射到网格表面上（`texture mapping`），描述顶点在纹理的二维归一化坐标空间中的位置
+  - `Texture coordinates` 纹理坐标，用于将二维或三维位图映射到网格表面上（`texture mapping`），描述顶点在纹理的二维归一化坐标空间（`texture space`）中的位置，左下角（0，0），右上角（1，1）
   - `Skinning weights` 蒙皮权重,一个顶点受连接骨骼的多个关节影响
 - `Vertext Formats` 保存的顶点属性的数据结构的布局
 - `Attribute Interpolation` 渲染三角形基于逐像素而不是逐顶点,所以需要对顶点属性进行插值得到内部点的属性
 - `Gouraud shading` 高洛德着色，对顶点的色彩属性进行插值
 - `Textures` 纹理，包含色彩信息和其他信息，可以映射到网格的三角形上；一些图形硬件约束纹理位图的大小为2的幂
-  - `Normal maps`
-  - `Gloss maps`
-  - `Environment maps`
+  - `Diffuse map` 漫反射贴图，描述物体表面每个纹素上的漫反射表面色彩
+  - `Albedo map` 无光颜色贴图，同漫反射贴图
+  - `Normal map` 法线贴图，保存每个纹素的单位法线，RGB编码
+  - `Gloss map` 光泽贴图，保存每个纹素的亮度
+  - `Environment map` 环境贴图，保存一张周围环境的图片，用于渲染反射
+- `Texture Addressing Modes` 纹理寻址模式，处理超出范围的纹理坐标的方法
+  - `Wrap` 纹理直接重复
+  - `Mirror` 纹理翻转后重复，相邻纹理镜像对称
+  - `Clamp` 超过范围的纹素颜色为纹理边界颜色
+  - `Border color` 超过范围的纹素颜色由用户定义
+- `Texture Formats` 保存在磁盘上：tga/png/bmp/tif；保存在内存中：RGB888/RGBA8888/RGB565/RGBA5551；压缩纹理：DXT/S3TC
+- `Texel Density` 纹素与像素的比例称为纹素密度；纹素密度小于1可能会看到纹素的边，纹素密度大于1可能会造成不必要的内存消耗和镜头微调时像素点的闪烁；纹素密度为1时最佳
+- `Mipmapping` 多层次纹理贴图，与 `LOD` 多层次模型相似；创建多个纹理级别，每个级别纹理的宽和高都是的上一个级别的一半，图形硬件选择其中一个或相邻的两个级别用于纹理映射，使得纹素密度尽可能接近1
+- `World-Space Texel Density` 纹素与自然空间物体表面积的比例；不需要接近1，但是所有物体需要一致
+- `Texture Filtering` 渲染三角形的一个像素时，图形硬件通过像素中心在纹理空间的落点，采样多个纹素并混合结果色作为实际采样的纹素颜色，这个过程叫纹理过滤
+  - `Nearest neighbor` 选择最接近像素中心的纹素；选择纹素密度大于等于1且最接近1的 `mip level`
+  - `Bilinear` 选择像素中心周围的4个纹素，混合权重基于纹素中心与像素中心的距离；选择纹素密度最接近1的 `mip level`
+  - `Trilinear` 选择纹素密度分别大于等于1和小于等于1且最接近1的2个 `mip level`，依次 `Bilinear` 并将结果进行线性插值
+  - `Anisotropic` 各向异性过滤；视角变化导致物体表面倾斜时，在一个梯形（或矩形、平行四边形）区域内进行纹素采样，提高该场景下的纹理质量；与 `Isotropy`（各向同性，包括双线性和三线性过滤） 相对
+- `Materials` 材质，包含纹理和其他高级别特性，例如着色器程序、着色器程序入参、其他控制图形加速硬件功能的参数
+  - `Mesh-material pairs` 包含渲染一个物体所需的所有信息，因此有时也称为 `render packets`，`geometric primitive`（几何图元）的概念有时也扩展包含 `Mesh-material pairs`
+  - `Submeshes` 一个 3D 模型通常使用多个材质，因此网格经常划分为子网格，分别对应单个材质
+
+### Lighting Basics
