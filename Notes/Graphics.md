@@ -59,3 +59,15 @@
   - `Submeshes` 一个 3D 模型通常使用多个材质，因此网格经常划分为子网格，分别对应单个材质
 
 ### Lighting Basics
+
+- `Shading` 着色处理，光线加其他视觉效果的广泛概况
+- `Light transport models` 渲染引擎使用的光线-表面和光线-体交互的数学模型
+  - `Direct lighting` 直接光，从光源发出、在物体表面反弹一次后射到虚拟镜头的光照
+  - `Indirect lighting` 间接光，从光源发出、在多个表面反弹多次后射到虚拟镜头的光照
+  - `Local illumination models` 局部光照模型，只考虑直接光，一个物体不会影响另一个物体的外观
+  - `Global illumination models` 全局光照模型，考虑直接光和间接光，一些全局光照模型旨在模拟特殊的视觉现象，如逼真的阴影、反射面、物体间光线相互反射、水面或闪亮金属表面强烈反射的光学焦散效果；另一些则模拟广泛的光学现象，如 `Ray tracing`（光线追踪）和 `radiosity methods`（辐射度方法）技术
+- `Rendering equation` / `Shading equation` 描述全局光照的数学公式，由 J. T. Kajiya 在一个意义重大的 `SIGGRAPH`（计算机图形学专业组）论文中提出 ；每个渲染技术都可以看作是渲染方程的完整或部分解决方案
+- `The Phong Lighting Model` 冯氏照明模型，最常采用的局部光照模型
+  - `Ambient`
+  - `Diffuse`
+  - `Specular`
