@@ -67,7 +67,9 @@
   - `Local illumination models` 局部光照模型，只考虑直接光，一个物体不会影响另一个物体的外观
   - `Global illumination models` 全局光照模型，考虑直接光和间接光，一些全局光照模型旨在模拟特殊的视觉现象，如逼真的阴影、反射面、物体间光线相互反射、水面或闪亮金属表面强烈反射的光学焦散效果；另一些则模拟广泛的光学现象，如 `Ray tracing`（光线追踪）和 `radiosity methods`（辐射度方法）技术
 - `Rendering equation` / `Shading equation` 描述全局光照的数学公式，由 J. T. Kajiya 在一个意义重大的 `SIGGRAPH`（计算机图形学专业组）论文中提出 ；每个渲染技术都可以看作是渲染方程的完整或部分解决方案
-- `The Phong Lighting Model` 冯氏照明模型，最常采用的局部光照模型
-  - `Ambient`
-  - `Diffuse`
-  - `Specular`
+- `The Phong Lighting Model` 冯氏光照模型，最常采用的局部光照模型
+  - `Ambient` 环境光，对场景整体光照水平进行建模，是场景中间接光的总体效果的近似
+  - `Diffuse` 漫反射光，光源照射到粗糙物体表面然后向各个方向反射
+  - `Specular` 高光，光源照射到光滑物体表面然后反射到镜头
+- `The inputs to the Phong model`
+  - `Viewing direction vector` V = [Vx Vy Vz]
