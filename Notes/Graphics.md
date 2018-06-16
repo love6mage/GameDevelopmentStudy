@@ -71,5 +71,21 @@
   - `Ambient` 环境光，对场景整体光照水平进行建模，是场景中间接光的总体效果的近似
   - `Diffuse` 漫反射光，光源照射到粗糙物体表面然后向各个方向反射
   - `Specular` 高光，光源照射到光滑物体表面然后反射到镜头
-- `The inputs to the Phong model`
-  - `Viewing direction vector` V = [Vx Vy Vz]
+- 冯氏光照模型的入参
+  
+  参数 | 解释
+  :-|:-
+  $V\ =\ [V_x\ V_y\ V_z]$ | 观察方向向量，从反射点到镜头焦点
+  $A\ =\ [A_R\ A_G\ A_B]$ | 环境光三个颜色通道上的强度
+  $N\ =\ [N_x\ N_y\ N_z]$ | 反射点的法线
+  $K_A\ =\ [K_{AR}\ K_{AG}\ K_{AB}]$ | 表面反射特性：环境光反射率
+  $K_D\ =\ [K_{DR}\ K_{DG}\ K_{DB}]$ | 表面反射特性：漫反射率
+  $K_S\ =\ [K_{SR}\ K_{SG}\ K_{SB}]$ | 表面反射特性：镜面反射率
+  $\alpha$ | 表面反射特性：镜面光泽度指数
+  $C_i\ =\ [C_{iR}\ C_{iG}\ C_{iB}]$ | 每个光源的颜色和强度
+  $L_i$ | 反射点到每个光源的方向向量
+
+- 冯氏光照模型一个点反射光强度 $I$ 的计算
+  - $I\ =\ (K_A\bigotimes A)+\sum_i[K_D(N\cdot L_i)+K_S(R_i\cdot V)^\alpha]\bigotimes C_i$
+  - $R$ 与 $L$ 和 $N$ 的关系如下图，计算公式为 $R\ =\ 2L_N-L$ 或 $R\ =\ 2(N\cdot L)N-L_T$ ![LNR](Images/LNR.PNG)
+- `Blinn-Phong`
