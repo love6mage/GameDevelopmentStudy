@@ -87,5 +87,21 @@
 
 - 冯氏光照模型一个点反射光强度 $I$ 的计算
   - $I\ =\ (K_A\bigotimes A)+\sum_i[K_D(N\cdot L_i)+K_S(R_i\cdot V)^\alpha]\bigotimes C_i$
-  - $R$ 与 $L$ 和 $N$ 的关系如下图，计算公式为 $R\ =\ 2L_N-L$ 或 $R\ =\ 2(N\cdot L)N-L_T$ ![LNR](Images/LNR.PNG)
-- `Blinn-Phong`
+  - $R$ 与 $L$ 和 $N$ 的关系如下图，计算公式为 $R\ =\ 2L_N-L$ 或 $R\ =\ 2(N\cdot L)N-L_T$ 
+  
+    ![LNR](Images/LNR.PNG)
+
+- `Blinn-Phong` 冯氏模型的变种（高光反射计算不同），精度更低（尽管对于某些表面比冯氏模型更贴近实际效果），运行时效率更高，几乎只用于早期电脑游戏和硬连线到早期GPU的固定功能流水线。
+  - 高光部分为 $(N\cdot H)^\alpha$，与冯氏模型的 $(R\cdot V)^\alpha$ 对应，其中 $H$ 在 $V$ 和 $L$ 的中间
+- `BRDF Plots` / `bidirectional reflection distribution function` 双向反射分布函数，一种通用本地反射模型，计算延观察方向 $V$ 反射的辐射亮度 `radiance` 与延入射光线 $L$ 入射的辐射照度 `irradiance` 的比例；一个 `BDRF` 可以看做一个半球图（`plot`），离球心越远的点可以看到的光的强度越低，冯氏模型中漫反射光和高光的半球图如下
+
+  ![DiffuseSpecular](Images/DiffuseSpecular.PNG)
+
+- `Modeling Light Sources` 对真实世界的光源进行建模
+  - `Static Lighting`
+  - `Ambient Lights`
+  - `Directional Lights`
+  - `Point (Omnidirectional) Lights`
+  - `Spot Lights`
+  - `Area Lights`
+  - `Emissive Objects`
