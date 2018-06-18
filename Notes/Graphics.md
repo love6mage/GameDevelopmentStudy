@@ -98,10 +98,21 @@
   ![DiffuseSpecular](Images/DiffuseSpecular.PNG)
 
 - `Modeling Light Sources` 对真实世界的光源进行建模
-  - `Static Lighting`
-  - `Ambient Lights`
-  - `Directional Lights`
-  - `Point (Omnidirectional) Lights`
-  - `Spot Lights`
-  - `Area Lights`
-  - `Emissive Objects`
+  - `Static Lighting` 提前计算好网格每个顶点的冯氏反射保存为顶点属性，或者提前计算每个像素的光照保存在 `light map`中
+    - `Light map` 光照贴图，一种纹理贴图；每个光源生成一个光照贴图，运用在光源影响区域内的所有物体上；可以使经过光源的动态物体被正确照亮；分辨率一般比漫反射纹理贴图低；纯的光照贴图比包含漫反射色信息的光照贴图更好压缩
+  - `Ambient Lights` 环境光，与视角无关且没有方向，所以只用一个颜色建模，强度和颜色在游戏世界的不同区域不同
+  - `Directional Lights` 平行光，太阳光，光源离物体无限远，所以用颜色 $C$ 和方向 $L$ 建模
+  - `Point (Omnidirectional) Lights` 点光源，在特定位置向所有方向发射光线；用光源位置 $P$，光源颜色和强度 $C$，最大半径 $r_{max}$建模；点光源不影响最大半径外的物体
+  - `Spot Lights` 聚光灯，手电筒光源，光线限制在一个圆锥体区域内的点光源；用光源位置 $P$，光源颜色 $C$，中心方向 $L$，最大半径 $r_{max}$，内圆锥偏角 $\theta_{min}$ 和外圆锥偏角 $\theta_{max}$ 建模；内圆锥光线强度最大，内圆锥外、外圆锥内光线强度随偏角增大而减小直到 0
+  - `Area Lights` 真实的光源是有区域的，可以投射出本影（`umbra`）和半影（`penumbra`）。渲染引擎一般不对这种光源进行建模，而是采用其他方法模拟区域光源的效果，例如混合多个阴影或者模糊阴影边界来模拟半影
+  - `Emissive Objects` 自发光物体，使用自发光纹理贴图建模
+    - `Emissive texture map` 自发光纹理贴图，纹理颜色的强度不受周围光线影响，始终最大
+- `Flashlight - Effect Combination` 手电筒是多种光源效果组合的简单实例
+  - 镜头正对手电筒：自发光物体
+  - 手电筒发射光线到场景中：聚光灯
+  - 手电筒的光锥：黄色半透明网格
+  - 眩光：镜头前的透明卡片
+  - `bloom` 泛光效果：`high dynamic range light` 高动态范围图像
+  - 焦散效果：投射纹理
+- `The Virtual Camera` 焦点加焦点前的矩形虚拟感应面 / 成像矩阵 `imaging rectangle`；成像矩阵包含方形或矩形虚拟光线感应器，每个感应器对应屏幕上的一个像素。渲染就是决定这些虚拟感应器要记录的光线的颜色和强度的过程
+- `View Space`
