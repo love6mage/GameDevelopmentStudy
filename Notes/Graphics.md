@@ -115,4 +115,13 @@
   - `bloom` 泛光效果：`high dynamic range light` 高动态范围图像
   - 焦散效果：投射纹理
 - `The Virtual Camera` 焦点加焦点前的矩形虚拟感应面 / 成像矩阵 `imaging rectangle`；成像矩阵包含方形或矩形虚拟光线感应器，每个感应器对应屏幕上的一个像素。渲染就是决定这些虚拟感应器要记录的光线的颜色和强度的过程
-- `View Space`
+- `View Space`/ `Camera Space` 虚拟摄像头的焦点是观察空间的原点，且一般摄像头正对 z 轴正或负方向，上对 y 轴正方向，左或右对 x 轴正方向；渲染网格时，网格顶点需要从模型空间变换到自然空间再到观察空间
+- `Projections` 投影，将 3D 的场景变换到 2D 的图像平面。
+  - `perspective` 透视投影，有 `perspective foreshortening`（透视收缩，物体离镜头越远看起来越小）的效果
+  - `orthographic` 等距正交投影，渲染 3D 模型的平面图或者 2D 图形
+- `View volume` 视体，可视空间，镜头可以看到的区域。由 6 个平面定义
+  - `Near plane` 近平面，即成像矩阵
+  - `Four side planes` 虚拟屏幕的边
+  - `Far plane` 远平面，用于渲染优化，保证极远的物体不被绘制
+  - `Frustum` 平截头体，透视投影渲染时的视体；正交投影时视体为长方柱
+- `Homogeneous Clip Space` 透视投影和正交投影都是将点从观察空间变换到齐次裁剪空间中（从观察空间视体到 `Canonical View Volume` 正规化视体）。该空间独立于采用的投影类型、屏幕的分辨率和长宽比（`aspect ratio`）
