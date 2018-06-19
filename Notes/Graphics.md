@@ -124,4 +124,10 @@
   - `Four side planes` 虚拟屏幕的边
   - `Far plane` 远平面，用于渲染优化，保证极远的物体不被绘制
   - `Frustum` 平截头体，透视投影渲染时的视体；正交投影时视体为长方柱
-- `Homogeneous Clip Space` 透视投影和正交投影都是将点从观察空间变换到齐次裁剪空间中（从观察空间视体到 `Canonical View Volume` 正规化视体）。该空间独立于采用的投影类型、屏幕的分辨率和长宽比（`aspect ratio`）
+- `Homogeneous Clip Space` 透视投影和正交投影都是将点从观察空间变换到齐次裁剪空间中（从观察空间视体到 `Canonical View Volume` 正规化视体）
+  - 该空间独立于采用的投影类型、屏幕的分辨率和长宽比（`aspect ratio`）
+  - 一般为左手坐标系（`left-handed`）
+  - 正规化视体为长方柱，便于对三角形进行裁剪
+  - x 轴和 y 轴坐标范围为 $[-1,1]$，z 轴坐标范围为 $[-1,1]$（OpenGL）或 $[0,1]$（DirectX）
+  - 齐次向量转换为三维坐标时 x/y/z 分量都要除以 w 分量，透视投影时变换的齐次向量的 w 分量是 z 坐标乘一个常数，所以齐次裁剪空间的坐标都除以了 z 坐标，造成透视收缩的效果
+- `Perspective-Correct Vertex Attribute Interpolation` 透视校正插值。顶点属性插值是在屏幕空间（`Screen space`）执行的，透视投影时的顶点属性插值需要考虑到透视收缩效果。
