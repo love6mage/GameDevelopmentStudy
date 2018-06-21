@@ -144,3 +144,21 @@
 - `z-Fighting and the w-Buffer` 深度缓冲精度是有限的，当两个平面无限靠近时依靠深度缓冲无法确定前后，导致后平面一些像素被绘制到前平面上，产生的图像噪音效果叫 `z-fighting`；使用裁剪空间的 z 分量作为深度导致离屏远的平面深度精度比离屏近的平面深度精度低，因为观察空间 z 坐标和裁剪空间的 z 分量是倒数关系；使用观察空间 z 坐标或裁剪空间 w 分量作为深度可以使离屏远近不同的平面有相同的深度精度，这个技术叫 w 缓冲（`w-buffering`）；w 缓冲无法直接对深度进行线性插值，所以比 z 缓冲更慢
 
 ## The Rendering Pipeline
+
+- `Pipeline` 多个计算阶段（`Stage`）的有序链，每个阶段是独立的单元，有特定目标、操作输入数据流、产生输出数据流，前面阶段的输出作为后面阶段的输入。阶段的独立性赋予流水线结构优秀的平行处理能力，链中每个阶段可以同时处理数据、每个阶段可以同时处理多条数据。
+  - `Throughput` 吞吐量，流水线的吞吐量计量流水线每秒完整处理的数据量
+  - `Latency` 时延，流水线的时延计量流水线完整处理一条数据的时间；阶段的时延计量阶段处理一条数据的时间；时延最大的阶段决定了流水线的吞吐量，是流水线吞吐量的瓶颈
+- `High-level stages in pipeline` 高层次的阶段划分
+  - `Tools stage (offline)` 离线工具阶段，定义几何图形和材质
+  - `Asset conditioning stage (offline)` 离线资源调节阶段，资源调节流水线（`Asset conditioning pipeline` / `ACP`）将几何图形和材质处理为引擎可用的格式
+  - `Application stage (CPU)` CPU应用阶段，CPU 识别出可视网格实例，将网格实例和材质提交给图形硬件进行渲染
+  - `Geometry processing stage (GPU)` GPU 几何处理阶段，GPU 将顶点变换、照亮、投影到齐次裁剪空间；可选的几何着色器处理三角形并以视锥体（`View frustum`）裁剪三角形
+  - `Rasterization stage (GPU)` GPU 光栅化阶段，GPU 将三角形转换为着色且通过不同测试（z-test, alpha test, stencil test, etc.）的分段，最终混合存入帧缓冲
+- 每个阶段的数据转换
+  - 工具阶段：处理网格和材质
+  - CPU 阶段：处理网格实例和子网格
+  - GPU 阶段
+    - 几何处理阶段：子网格分成大量顶点平行处理，最后再将完整变换和着色的顶点重构成三角形
+    - 光栅化阶段：三角形分成分段，这些分段要么丢弃，要么作为颜色信息存入帧缓冲
+- `The Tools stage` 工具阶段
+  - `Digital content creation` / `DCC` 数据内容创造；`DCC` 应用程序有 Maya, 3ds Max, Lightwave, Softimage/XSI, SketchUp, etc. 网格是由这些应用程序建模产生的，用 NURBS，四边形或三角形等定义
