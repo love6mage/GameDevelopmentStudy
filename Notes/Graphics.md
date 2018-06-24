@@ -179,3 +179,11 @@
 - 耗时的照明计算可以在这个阶段离线进行计算，称为静态照明（`static lighting`）
 
 ### A Brief History of the GPU
+
+- 早期游戏开发所有的渲染工作都是 CPU 做的，随着游戏的流行，图形硬件开始发展起来，减轻了 CPU 的工作
+- 最开始的图形加速器只处理渲染流水线中最耗时的光栅化阶段，随后开始支持几何处理阶段
+- 最开始的图形硬件只提供一个硬连线可配置的实现，即固定功能流水线（`fixed-function pipeline`），这个技术称为硬件转换和照明（`hardware transformation and lighting` / `hardware T&L`）；后来，部分子阶段开始可编程，开发者可以编写称为着色器的程序来控制流水线如何处理顶点（`vertex shaders`）、分段（`fragment shaders` / `pixel shaders`）；DirectX 10 加入了第三种着色器 `geometry shader`，允许渲染引擎修改、剔除、创建完整的图元（三角形、线、点）
+- 图形硬件逐渐演化为一个特殊的微处理器，称为 `graphics processing unit` / `GPU`，GPU 设计通过使用巨量的平行计算来最大化流水线的吞吐量
+- GPU 逐渐演化为通用的高性能计算引擎，使用 GPU 编程完成图形无关的的任务称为 GPU 通用计算（`general-purpose GPU computing` / `GPGPU`）。GPU 通用计算中，图形无关的计算由特殊的着色器 `compute shaders` 来处理，它对 GPU 带宽的高效利用是在 PS4 或 Xbox One 上实现高性能的重要手段
+
+### The GPU Pipeline
