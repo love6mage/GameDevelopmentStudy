@@ -228,4 +228,66 @@
     - `Constant registers` 常量寄存器，着色器的第二输入，应用程序在提交要渲染的图元时设置，例如模型-观察转换矩阵、投影矩阵、光照参数和其他无法作为顶点属性但着色器需要的参数
     - `Temporary registers` 临时寄存器，由着色器内部使用，保存计算的中间结果
     - `Output registers` 输出寄存器，由着色器填充作为着色器的唯一输出形式，GPU 可以将输出写回 RAM 作为流水线下一阶段的输入，通常 GPU 将这些数据缓存复用以减少计算，例如 `post-transform vertex cache` 缓存了顶点着色器最近处理的顶点
-  - `Textures`
+  - `Textures` 着色器可以通过纹理坐标（而不是绝对内存地址）直接只读访问一个纹理贴图
+    - GPU 的纹理采样器自动过滤纹理数据（`Texture filtering`），适当混合相邻纹素间或相邻 `mipmap level` 间的值
+    - 可以禁用贴图过滤来获取对特定纹素值的直接访问能力，这在纹理贴图用作数据表时十分有用
+    - 着色器可以将场景渲染到在后续渲染传递中被解释为纹理贴图的离屏帧缓冲中，着色器只能通过这种间接方式写入纹理贴图
+- `High-Level Shader Language Syntax` 高级着色器语言语法，Cg 或 CLSL 中定义的 `struct` 和变量被着色器编译器直接映射到寄存器
+  - `Semantics` 语义，变量和 `struct` 成员后面可以跟一个冒号加一个称为语义的关键字，语义声明了变量或成员与特定顶点或分段属性的绑定关系  
+    ```C
+    struct VtxOut
+    {
+      float4 pos : POSITION; // map to position attribute
+      float4 color : COLOR; // map to color attribute
+    };
+    ```
+  - `Input versus output` 关键字`in` 和 `out` 声明了变量与输入输出寄存器的映射关系
+    ```C
+    VtxOut vshaderMain(VtxIn in) // maps to input registers
+    {
+      VtxOut out;
+      // ...
+      return out; // maps to output registers
+    }
+    ```
+  - `Uniform declaration` 关键字 `uniform` 声明了变量与常量寄存器的映射关系，模型-观察转换矩阵可以如下传递给顶点着色器
+    ```C
+    VtxOut vshaderMain(
+      VtxIn in,
+      uniform float4x4 modelViewMatrix)
+    {
+      VtxOut out;
+      // ...
+      return out;
+    }
+    ```
+  - `Arithmetic operations` 算术远算可以用 C 风格的运算符或调用内部函数
+    ```C
+    VtxOut vshaderMain(VtxIn in,
+      uniform float4x4 modelViewMatrix)
+    {
+      VtxOut out;
+
+      out.pos = mul(modelViewMatrix, in.pos);
+      out.color = float4(0, 1, 0, 1); // RGBA green
+
+      return out;
+    }
+    ```
+  - 读纹理数据需要调用读特定纹理坐标处纹素值的内部函数，这些函数可以读一维、二维、三维的各种格式的纹理，使用或不使用纹理过滤；特殊的纹理寻址模式可用于访问立方体贴图或阴影贴图（`shadow map`）
+  - `texture sampler` 纹理采样器，特殊的数据格式，可以声明对纹理贴图的引用，例如 `sampler2D` 声明一个对二维纹理的引用，下面简单的 Cg 像素着色器应用一个漫反射贴图到三角形
+    ```C
+    struct FragmentOut
+    {
+      float4 color : COLOR;
+    };
+    FragmentOut pshaderMain(float2 uv : TEXCOORD0,
+      uniform sampler2D texture)
+    {
+      FragmentOut out;
+      // look up texel at (u,v)
+      out.color = tex2D(texture, uv);
+      return out;
+    }
+    ```
+- `Effect Files`
