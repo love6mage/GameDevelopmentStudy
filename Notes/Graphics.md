@@ -220,3 +220,12 @@
   - alpha 混合时，不透明几何图形渲染到帧缓冲中后，半透明表面必须按照从后到前的顺序保存和渲染，否则深度测试会丢弃部分表面，造成最终混合不完整
 
 ### Programmable Shaders
+
+- 着色器架构从 DirectX 8 开始初具可编程性，早期着色器模型（`shader models`）只支持汇编语言，像素着色器与顶点着色器的指令集和寄存器组有着显著不同。DirectX 9 开始支持 C 风格的着色器语言，如 Cg（C for graphics），HLSL（High-Level Shading Language—微软实现的 Cg），GLSL（OpenGL shading language）。DirectX 10 引入了几何着色器，以及一个统一着色器架构 `shader model 4.0`（DirectX 的叫法），该模型中，所有的着色器粗略支持同样的指令集、有同样的能力集，包括读纹理内存的能力
+- `Accessing Memory` 因为 GPU 实现了一个数据处理流水线，所以对 RAM 的访问是非常小心的。着色器程序无法直接访问内存，而是通过寄存器或纹理贴图的方式访问（PS4 的 GPU 提供了一个新颖的特性 `shader resource tables` / `SRTs`，允许 GPU 通过高速 `garlic` 总线直接访问主 RAM，节省了渲染前装配场景的 CPU 时间）
+  - `Shader Registers` GPU 寄存器为 128 位 SIMD 格式，每个寄存器保留 4 个 32 位浮点数或整数（齐次裁剪空间的四元组向量或 RGBA 格式的颜色，每个颜色 32 位浮点数），单个 32 位标量（一般重复四次），有些 GPU 可以对 16 位数据进行操作
+    - `Input registers` 输入寄存器，着色器的主要输入，GPU 在调用着色器前自动从视频 RAM 读取设置
+    - `Constant registers` 常量寄存器，着色器的第二输入，应用程序在提交要渲染的图元时设置，例如模型-观察转换矩阵、投影矩阵、光照参数和其他无法作为顶点属性但着色器需要的参数
+    - `Temporary registers` 临时寄存器，由着色器内部使用，保存计算的中间结果
+    - `Output registers` 输出寄存器，由着色器填充作为着色器的唯一输出形式，GPU 可以将输出写回 RAM 作为流水线下一阶段的输入，通常 GPU 将这些数据缓存复用以减少计算，例如 `post-transform vertex cache` 缓存了顶点着色器最近处理的顶点
+  - `Textures`
