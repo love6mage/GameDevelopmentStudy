@@ -110,3 +110,71 @@
   ```
 
 ## Poses
+
+- 姿势是动画师给人物注入生命的主要工具，动画就是将角色的身体排列成一系列离散的静止姿势然后快速连续显示（通常在相邻姿势间线性插值而不是逐个显示姿势）
+- 关节的姿势由关节的位置、方向和缩放定义，相对于某些参考帧。关节姿势通常用 $4\times 4$ 或 $4\times 3$ 矩阵或 SQT 数据结构（scale, quaternion rotation and vector translation）表示。骨架的姿势是关节姿势的集合，用一个简单的矩阵或 SQT 的数组表示
+
+### Bind Pose
+
+- `Bind pose` / `Reference pose` / `Rest pose` 绑定姿势，绑定到骨架前的 3D 网格的姿势。也称为 T 姿势（`T-pose`），因为人物通常站立时双脚略微分开，双臂伸出，形成字母 T 的形状
+
+### Local Poses
+
+- 关节的姿势通常相对于其父关节定义，我们通常使用术语局部姿势来描述相对于父关节的姿势。局部姿势大多数保存为 SQT 格式
+- `Joint space` 关节空间，一个关节定义的坐标空间
+- 一个关节姿势只不过是一个仿射变换，关节 $j$ 的姿势可以写成 $4\times 4$ 的仿射变换矩阵 $P_j$，由平移矢量 $T_j$，$3\times 3$ 的对角缩放矩阵 $S_j$，$3\times 3$ 的旋转矩阵 $R_j$ 组成。整个骨架的姿势 $P^{skel}$ 可以写成所有姿势 $P_j$ 的集合
+  
+  $$
+  P_j=\begin{bmatrix}
+    S_jR_j & 0 \\
+    T_j & 1
+  \end{bmatrix},\quad
+  P^{skel}=\{P_j\}|_{j=0}^{N-1}
+  $$
+
+- `Joint Scale` 关节缩放
+  - 有些引擎假设关节不会被缩放，所以 $S_j$ 被简单地省略并假设为单位矩阵
+  - 有些引擎假设关节只会被均匀缩放（`uniform scale`），所以缩放可以用单个标量 $s_j$ 表示
+  - 有些引擎允许非均匀缩放（`nonuniform scale`），所以缩放可以紧凑表示为三元向量 $s_j=\begin{bmatrix} s_{jx} & s_{jy} & s_{jz}\end{bmatrix}$。它对应 $S_j$ 的三个对角线元素，所以本身并不真的是一个向量
+  - 几乎所有引擎不允许切变，因为切变需要一个完整的 $3\times 3$ 切变矩阵表示
+  - 对缩放的省略或约束减少了内存使用，简化了数学逻辑和引擎处理
+- `Representing a Joint Pose in Memory` 关节姿势在内存中的表示，通常以 SQT 格式保存，在 C++ 中的数据结构可能如下，S 被放在最后以优化结构体包装
+
+  ```C++
+  struct JointPose
+  {
+    Quaternion m_rot; // Q
+    Vector3 m_trans; // T
+    F32 m_scale; // S (uniform scale only)
+    // Vector4 m_scale; // S (nonuniform scale is permitted)
+  };
+  struct SkeletonPose
+  {
+    Skeleton* m_pSkeleton; // skeleton + num joints
+    JointPose* m_aLocalPose; // local joint poses
+  };
+  ```
+
+- `The Joint Pose as a Change of Basis` 任何仿射变换可以认为是点或向量从一个坐标空间向另一个坐标空间的变换。关节姿势变换 $P_j$ 应用于表示在关节 j 空间中的点或向量，结果是表示在父关节空间中的该点或向量，所以关节 j 的局部姿势可以写作 $P_{j\to p(j)}$，其中 $p(j)$ 返回关节 j 的父关节索引
+
+### Global Poses
+
+- 有时在模型或自然空间中表示关节姿势十分方便，这称为全局姿势。关节的全局姿势可以这样计算：在骨架中从当前关节到根关节进行遍历，将路径上所有关节的局部姿势串联相乘
+
+  
+  $$
+  P_{j\to M}=\prod_{i=j}^0P_{i\to p(i)}
+  $$
+
+- `Representing a Global Pose in Memory` 全局姿势在内存中的表示，扩展 `SkeletonPose` 结构体，使其包含全局姿势
+
+  ```C++
+  struct SkeletonPose
+  {
+    Skeleton* m_pSkeleton; // skeleton + num joints
+    JointPose* m_aLocalPose; // local joint poses
+    Matrix44* m_aGlobalPose; // global joint poses
+  };
+  ```
+
+## Clips
