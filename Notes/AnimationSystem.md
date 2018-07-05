@@ -181,7 +181,7 @@
 - 游戏是互动体验，游戏人物的运动不是像电影一样的长连续帧序列，而是被细分为大量细粒度的动作，这些单独的动作称为动画片段（`animation clips`）或有时仅称为动画（`animation`）
 - 每个片段使人物执行一个明确定义的动作，有些设计为循环的，如步行周期或奔跑周期，有些设计为执行一次，如抛物或绊倒在地上；有些影响整个身体，如人物跳到空中，有些只影响身体的一部分，如挥动右臂
 - 游戏的不互动部分包含了特殊情况，称为游戏中的电影（`in-game cinematic / IGC`）、非交互序列（`noninteractive sequence / NIC`）或全动态视频（`full-motion video / FMV`）。他们通常用于交代故事元素，采用和电影一样的方式创建。`IGC` 和 `NIS` 通常指游戏引擎自己实时渲染的非交互序列，`FMV` 通常指提前渲染为 MP4、WMV 或其他格式电影文件的序列，运行时由引擎的全屏电影播放器回放
-- `Quick time event / QTE` 快速时间事件，半交互序列，是非交互序列的一个变体。玩家必须在非交互序列中的正确时刻点击按钮才能看到成功动画并继续；否则会播放失败动画，玩家必须再次尝试，结果可能会丢失一条命或遭受其他后果
+- `Quick time event / QTE` 快速反应事件，半交互序列，是非交互序列的一个变体。玩家必须在非交互序列中的正确时刻点击按钮才能看到成功动画并继续；否则会播放失败动画，玩家必须再次尝试，结果可能会丢失一条命或遭受其他后果
 
 ### The Local Timeline
 
@@ -265,3 +265,51 @@
 ## Skinning and Matrix Palette Generation
 
 - `Skinning` 蒙皮，将 3D 网格的顶点附着到一个摆姿势的骨架的过程
+
+### Per-Vertex Skinning Information
+
+- 蒙皮网格通过它的顶点附着到骨架上。每个顶点可以绑定一个或多个关节，绑定一个关节时顶点精确跟踪关节的运动；绑定多个关节时，顶点的位置是假设它单独绑定每个顶点时的位置的加权平均。所以给一个骨架蒙皮需要提供两个信息：顶点绑定的关节的索引、每个绑定关节的加权因子
+- 通常游戏引擎对单个顶点能绑定的关节数量施加上限，典型的是四关节限制
+- 因为所有绑定关节的加权和必须为一，所以最后一个加权因子可以省略，所以一个典型的蒙皮顶点数据结构可能如下
+
+  ```C++
+  struct SkinnedVertex
+  {
+    float m_position[3]; // (Px, Py, Pz)
+    float m_normal[3]; // (Nx, Ny, Nz)
+    float m_u, m_v; // texture coords (u,v)
+    U8 m_jointIndex[4]; // joint indices
+    float m_jointWeight[3]; // joint weights (last weight omitted)
+  };
+  ```
+
+### The Mathematics of Skinning
+
+- `skinning matrix` 蒙皮矩阵，可以将蒙皮网格顶点的原始位置（在绑定姿势中的位置）变换为骨架当前姿势对应的新位置，与其他变换矩阵不同的是，蒙皮矩阵不是一个空间到另一个空间的基础变换，它变换的点在变换前后的位置都在模型空间中
+- `Simple Example: One-Jointed Skeleton`
+  - 绑定姿势的顶点从模型空间到关节空间的变换，需要乘以绑定姿势逆矩阵
+
+    $$
+    v_j=v_M^BB_{M\to j}=v_M^B(B_{j\to M})^{-1}
+    $$
+
+  - 当前姿势的顶点从关节空间到模型空间的变换，需要乘以当前姿势矩阵
+
+    $$
+    v_M^C=v_jC_{j\to M}
+    $$
+
+  - 蒙皮矩阵 $K_j$ 的计算
+
+    $$
+    v_M^C=v_jC_{j\to M}=v_M^B(B_{j\to M})^{-1}C_{j\to M}=v_M^BK_j
+    $$
+    $$
+    K_j=(B_{j\to M})^{-1}C_{j\to M}
+    $$
+
+- `Extension to Multijointed Skeletons`
+  - 对于多关节骨架，要计算一个蒙皮矩阵 $K_j$ 的数组，每个元素对应一个关节，这个数组称为矩阵调色板（`matrix palette`）。引擎渲染蒙皮网格时为每一个顶点在调色板中查询对应关节的蒙皮矩阵，使用矩阵将顶点从绑定姿势变换到当前姿势
+  - $B_{j\to M}$ 不变，通常用骨骼缓存 $(B_{j\to M})^{-1}$，$C_{j\to M}$ 随角色姿势变化而变化
+  - 动画引擎通常为每个关节计算局部姿势 $C_{j\to p(j)}$，然后将它们转化为全局姿势 $C_{j\to M}$，最后将每个全局姿势与对应的已经缓存的绑定姿势逆矩阵 $(B_{j\to M})^{-1}$ 相乘，得到每个关节的蒙皮矩阵 $K_j$
+- `Incorporating the Model-to-World Transform`
