@@ -363,12 +363,12 @@
   \beta(t)=\frac{t-t_1}{t_2-t_1}
   $$
 
-- `Motion Continuity: Cross-Fading` 动作连续性：交叉衰落。角色动画通过拼接大量精细的动画片段来实现，这些动画片度的质量水平很难保持一致，所以角色从一个片段切到另一个片段时很容易发生“断裂”
+- `Motion Continuity: Cross-Fading` 动作连续性：交叉渐变。角色动画通过拼接大量精细的动画片段来实现，这些动画片度的质量水平很难保持一致，所以角色从一个片段切到另一个片段时很容易发生“断裂”
   - 我们期望角色每个部分的移动都能完美平滑，即使在片段间的过渡。这样，每个关节移动的三维路径都不能有突然的“跳跃”，称为 C0 连续性（`C0 continuity`）。同样，这些路径的一阶导数即速度也应该是连续的，称为 C1 连续性；这些路径的二阶导数即加速度也应该是连续的，称为 C2 连续性。更高的连续性赋予动画角色运动更好的感知质量和真实感
-  - 基于线性插值的动画混合能实现相当好的 C0 运动连续性以及很好的近似 C1 连续性。当通过这种方式在片段间过渡时，线性插值混合有时称为交叉衰落（`cross-fading`）
+  - 基于线性插值的动画混合能实现相当好的 C0 运动连续性以及很好的近似 C1 连续性。当通过这种方式在片段间过渡时，线性插值混合有时称为交叉渐变（`cross-fading`）
   - 线性插值混合有时会产生“滑动脚”这样的失真
-  - 为了在两个动画间交叉衰落，需要将两个片段的时间轴合理地部分重叠，将片段的重叠部分混合
-  - `Types of Cross-Fades` 交叉衰落的类型
+  - 为了在两个动画间交叉渐变，需要将两个片段的时间轴合理地部分重叠，将片段的重叠部分混合
+  - `Types of Cross-Fades` 交叉渐变的类型
     - `Smooth transition` 平滑过渡，两个动画片段同时播放，混合因子 $\beta$ 从 $0$ 到 $1$ 增加。为了使其正常工作，两个片段必须是循环动画，并且他们的时间轴必须同步
     - `Frozen transition` 冻结过渡，第一个片段的局部时钟在第二个片段开始播放时停止，骨架来自于第一个片段的姿势冻结，第二个片段逐渐接管运动。这个方法不要求两个片段必须相关和可以同步时间
   - 混合因子 $\beta$ 可以随时间线性变换，如果要实现更平滑的过渡，可以使用一个关于时间的立方函数，如一维贝塞尔曲线
@@ -586,5 +586,26 @@
 
 ### Blend Trees
 
-- 一些动画引擎使用混合操作树而不是扁平的加权平均表示混合规格，动画混合树是编译原理中编译树（`expression tree`）或语法树（`syntax tree`）的一个例子，内部节点为操作，叶子节点为这些操作的输入，更准确的说，内部节点表示语法的非终结符（`nonterminals`），叶子节点表示终结符（`terminals`）
-- `Binary LERP Blend`
+- 一些动画引擎使用混合操作树而不是扁平的加权平均表示混合规格，动画混合树是编译原理中表达树（`expression tree`）或语法树（`syntax tree`）的一个例子，内部节点为操作，叶子节点为这些操作的输入，更准确的说，内部节点表示语法的非终结符（`nonterminals`），叶子节点表示终结符（`terminals`）
+- 各种动画混合如何由表达式树表示
+
+  混合类型 | 表达式树
+  :-|:-
+  二元线性插值混合 | ![Binary LERP Blend](Images/BinaryLERP.PNG)
+  通用一维线性插值混合 | ![Generalized One-Dimensional LERP Blend](Images/Generalized1DLERP.PNG)
+  简单二维线性插值混合 | ![Simple Two-Dimensional LERP Blend](Images/Simple2DLERP.PNG)
+  三角形二维线性插值混合 | ![Triangular LERP Blend](Images/Tiangular2DLERP.PNG)
+  通用二维线性插值混合 | ![Generalized Triangular LERP Blend](Images/Generalized2DLERP.PNG)
+  加性混合（差异片段输入只能作为叶子节点；输入不可以互换） | ![Additive Blend](Images/ActiveBlend.PNG) ![Additive Blend](Images/ActiveBlendCascade.PNG)
+
+### Cross-Fading Architectures
+
+- `Cross-Fades with a Flat Weighted Average` 使用扁平的加权平均结构实现交叉渐变
+  - 如果希望从片段 A 平滑过渡到片段 B ，简单增加 B 的权重，同时减小 A 的权重
+  - 如果希望从片段 ABC 平滑过渡到片段 DE，增加 DE 权重、减小 ABC 权重的同时，要保持 ABC 的相对权重和 DE 的相对权重不变。该实现必须跟踪片段之间的逻辑分组，这需要在扁平的片段状态数组之上维护额外的元信息
+- `Cross-Fades with Expression Trees` 在表达树动画引擎中实现交叉渐变比在加权平均结构中更直观
+  - 在交叉渐变的持续时间内，在混合树的根处引入一个新的二进制 LERP 节点，这个节点的上输入为源树（单个片段或复杂混合），下输入为目标树（单个片段或复杂混合）。在过渡期间，这个节点的混合因子从 0 增加到 1；过渡完成时，上输入和这个节点丢弃，保留下输入作为混合树的新的根
+
+### Animation Pipeline Optimization
+
+- 动画流水线优化通常高度特定于运行游戏的硬件架构。例如现代硬件架构的内存访问模式可以极大地影响代码的性能，所以必须避免缓冲未命中（`cache misses`）和加载命中存储（`load-hit-store`）；对于其他硬件，可能浮点数操作是瓶颈，这种情况下需要构造代码以最大限度利用 SIMD 矢量数学。因此，一些动画流水线 API 高度特定于具体平台，其他流水线尝试提供可在不同处理器上以不同方式进行优化的 API
