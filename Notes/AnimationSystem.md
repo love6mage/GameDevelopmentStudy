@@ -1,5 +1,61 @@
 # Animation System
 
+- [Animation System](#animation-system)
+  - [Types of Character Animation](#types-of-character-animation)
+    - [Cel Animation](#cel-animation)
+    - [Rigid Hierarchical Animation](#rigid-hierarchical-animation)
+    - [Per-Vertex Animation and Morph Targets](#per-vertex-animation-and-morph-targets)
+    - [Skinned Animation](#skinned-animation)
+    - [Animation Methods as Data Compression Techniques](#animation-methods-as-data-compression-techniques)
+  - [Skeletons](#skeletons)
+    - [The Skeleal Hierarchy](#the-skeleal-hierarchy)
+    - [Representing a Skeleton in Memory](#representing-a-skeleton-in-memory)
+  - [Poses](#poses)
+    - [Bind Pose](#bind-pose)
+    - [Local Poses](#local-poses)
+    - [Global Poses](#global-poses)
+  - [Clips](#clips)
+    - [The Local Timeline](#the-local-timeline)
+    - [The Global Timeline](#the-global-timeline)
+    - [Comparison of Local and Global Clocks](#comparison-of-local-and-global-clocks)
+    - [A Simple Animation Data Format](#a-simple-animation-data-format)
+    - [Continuous Channel Functions](#continuous-channel-functions)
+    - [Metachannels](#metachannels)
+  - [Skinning and Matrix Palette Generation](#skinning-and-matrix-palette-generation)
+    - [Per-Vertex Skinning Information](#per-vertex-skinning-information)
+    - [The Mathematics of Skinning](#the-mathematics-of-skinning)
+  - [Animation Blending](#animation-blending)
+    - [LERP Blending](#lerp-blending)
+    - [Applications of LERP Blending](#applications-of-lerp-blending)
+    - [Complex LERP Blends](#complex-lerp-blends)
+    - [Partial-Skeleton Blending](#partial-skeleton-blending)
+    - [Additive Blending](#additive-blending)
+    - [Applications of Additive Blending](#applications-of-additive-blending)
+  - [Post-Processing](#post-processing)
+    - [Procedural Animations](#procedural-animations)
+    - [Inverse Kinematics](#inverse-kinematics)
+    - [Rag Dolls](#rag-dolls)
+  - [Compression Techniques](#compression-techniques)
+    - [Channel Omission](#channel-omission)
+    - [Quantization](#quantization)
+    - [Sampling Frequency and Key Omission](#sampling-frequency-and-key-omission)
+    - [Curve-Based Compression](#curve-based-compression)
+    - [Selective Loading and Streaming](#selective-loading-and-streaming)
+  - [Animation System Architecture](#animation-system-architecture)
+  - [The Animation Pipeline](#the-animation-pipeline)
+    - [Data Structures](#data-structures)
+    - [The Flat Weighted Average Blend Representation](#the-flat-weighted-average-blend-representation)
+    - [Blend Trees](#blend-trees)
+    - [Cross-Fading Architectures](#cross-fading-architectures)
+    - [Animation Pipeline Optimization](#animation-pipeline-optimization)
+  - [Action State Machines](#action-state-machines)
+    - [Animation States](#animation-states)
+    - [Transitions](#transitions)
+    - [State Layers](#state-layers)
+    - [Control Parameters](#control-parameters)
+    - [Constraints](#constraints)
+  - [Animation Controllers](#animation-controllers)
+
 ## Types of Character Animation
 
 ### Cel Animation
@@ -612,7 +668,7 @@
 - `Optimization on the PlayStation 3` PS3 有 6 个 SPU 和 1 个 PPU，SPU 比 PPU 更快地执行大多数代码；每个 SPU 有 256 KiB 的超快本地存储内存供其独占使用；PS3 有强大的 DMA 控制器，能够在主 RAM 和 SPU 本地存储之间来回复制数据块，这个数据传输过程与 SPU 和 PPU 的计算任务并行发生；如果可以为 PS3 编写理想的动画流水线，那么将在 SPU 上执行尽可能多的处理，并且 PPU 和任何 SPU 都不会空闲等待 DMA 完成。
   - PS3 的架构提示我们使用批量作业 API，该 API 中游戏的动画混合请求作为在 SPU 上执行的作业执行。每个动画作业的输入数据通过 DMA 控制器从主 RAM 移动到其中一个 SPU 本地存储，然后该作业在该 SPU 上以闪电般的速度执行，并通过另外一个 DMA 操作将结果传送回主 RAM。当一个作业执行的时候，DMA 控制器和其他 SPU 可以忙于其他动画或非动画任务，使得动画系统最大化 PS3 的硬件利用率
 - `Optimization on the Xbox 360, Xbox One and PlayStation 4` Xbox、Xbox 360、Xbox One、PS4 采用异构统一内存架构（hUMA），所有的 CPU 内核和 GPU 共享访问单个主 RAM 块
-  - 理论上，hUMA 架构需要一套完全不同于 PS3 的优化，但是有时一个平台的优化同样有利于其他平台。事实证明，所有这些平台都会存在高速缓存未命中和加载命中存储内存访问模型，导致性能大幅下降，所以最好在所有系统中保持动画数据尽可能在物理 RAM 中本地化。大批量处理动画并对相对较小的内存区域内的数据进行操作（如 PS3 的 SPU 本地存储）的动画流水线在统一内存架构上也运行良好。
+  - 理论上，hUMA 架构需要一套完全不同于 PS3 的优化，但是有时一个平台的优化同样有利于其他平台。事实证明，所有这些平台都会存在高速缓存未命中和加载命中存储内存访问模型，导致性能大幅下降，所以最好在所有系统中保持动画数据尽可能在物理 RAM 中集中。大批量处理动画并对相对较小的内存区域内的数据进行操作（如 PS3 的 SPU 本地存储）的动画流水线在统一内存架构上也运行良好。
   - 一个好的经验法则是使用最严格的性能约束为平台优化引擎，这样优化代码移植到其他约束较少的平台时，所做的优化可能仍然有益，即使在最坏的情况下对性能的负面影响也很小。反之，从最不严格的平台移植到更严格的平台，几乎总是会产生不太理想的性能
 
 ## Action State Machines
@@ -702,3 +758,10 @@
   - `Cover registration` 这是角色与作为掩体的物体完美对齐的能力，通常使用参考定位器实现
   - `Cover entry and departure` 如果角色可以掩护，则通常必须使用动画混合和自定义进入和离开动画来使角色进入退出掩体
   - `Traversal aids` 角色在环境中越过障碍物、绕过障碍物或从下方或中间穿过障碍物的能力可以为游戏增加很多生命。这通常通过提供自定义动画和使用参考定位器来确保与正在穿越的障碍物的合适注册完成
+
+## Animation Controllers
+
+- 一些游戏团队发现在 ASM 上添加新的一层十分方便，这层提供角色动画的更上层控制，通常实现为一组称为动画控制器（`animation controller`）的类
+- 控制器往往管理相对长的时间段内的行为，大约几秒或更长。每个动画控制器通常负责一种粗略的角色行为，例如在掩体内如何表现，在游戏世界中从一个地方运动到另一个地方时的行为，或者如何驾驶车辆
+- 基于控制器的设计可以将所有与特定行为相关的代码集中在一个地方，允许更上层游戏系统，如玩家机制或 AI，用更简单的方式编写，因为所有微观管理动画的细节都可以提取和隐藏到控制器中
+- 控制器实现的方式没有标准。有些团队不使用控制器，有些团队将控制器紧密集成到 AI 或玩家机制系统中，有些团队实现一套相对通用的控制器，在玩家角色和 NPC 间共享
