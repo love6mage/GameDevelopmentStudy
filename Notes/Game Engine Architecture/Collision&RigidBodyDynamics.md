@@ -278,4 +278,69 @@
     $$
     \ddot{r}(t)=\frac{1}{m}(t,r(t),\dot{r}(t))
     $$
-- `Analytical Solutions` 极少的情况下，运动的微分方程可以通过分析求解，这意味着可以找到一个简单的封闭函数描述体在所有可能时间 $t$ 的位置。然而这在游戏物理中几乎不可能，因为某些微分方程的封闭解决方案是未知的，而且游戏是交互式模拟，通常无法预测物体在某个时间所受的力。这个经验法则当然也有例外，例如愤怒的小鸟
+- `Analytical Solutions` 极少的情况下，运动的微分方程可以通过分析求解，这意味着可以找到一个简单的封闭函数描述体在所有可能时间 $t$ 的位置。然而这在游戏物理中几乎不可能，因为某些微分方程的封闭解决方案是未知的，而且游戏是交互式模拟，通常无法预测物体在某个时间所受的力。这个经验法则当然也有例外，例如求解封闭表达式来决定抛射物要击中预定目标的必须的发射速度很常见
+
+### Numerical Integration
+
+- 数值积分，使用时间分步（`time-stepped`）方式来解决微分方程。时间步的持续时间通常大致不变，用 $\Delta{t}$ 表示，给定体在当前时间 $t_1$ 的位置和速度，以及力关于时间、位置和速度的函数，我们期望找到体在下个时间步 $t_2=t_1+\Delta{t}$ 的位置和速度，即给定 $r(t_1)$，$v(t_1)$ 和 $F(t,r,v)$ 求 $r(t_2)$ 和 $v(t_2)$
+- `Explicit Euler` 显示欧拉方法，ODE 最简单的数值解法之一，常被新游戏程序员采用
+  - $v(t)=\dot{r}(t)$ 的近似显示欧拉解为
+    $$
+    r(t_2)=r(t_1)+v(t_1)\Delta{t}
+    $$
+  - $a(t)=\frac{F_{net}}{m}=\dot{v}(t)$ 的近似显示欧拉解为
+    $$
+    v(t_2)=v(t_1)+\frac{F_{net}}{m}\Delta{t}
+    $$
+  - `Interpretations of Explicit Euler` 显示欧拉的解释
+    - 假设了物体的速度在下个时间步不变
+    - 可以解释为两个有限差分的商，即 $\frac{\mathrm{d}r}{\mathrm{d}t}=\frac{\Delta{r}}{\Delta{t}}$
+    - 当时间步中速度大致不变或 $\Delta{t}$ 趋向于零时运作得很好
+- `Properties of Numerical Methods` 常微分方程的数值解法有三个重要且相互关联的属性
+  - `Convergence` 收敛，随着时间步 $\Delta{t}$ 趋向于 $0$，近似解是否越来越靠近真实解
+  - `Order` 阶数，我们称一个数值方法为 $n$ 阶，如果它的误差项为 $O(\Delta{t}^{n+1})$。误差项可以用 ODE 的数值解法方程减去 ODE 的精确解法的无限泰勒级数展开得到。下式误差项为 $O(\Delta{t}^2)$
+
+    $$
+    r(t_2)=r(t_1)+\dot{r}(t_1)\Delta{t}+O(\Delta{t}^2)
+    $$
+
+  - `Stability` 数值解法是否随着时间推移而稳定下来。如果数值方法给系统添加能量，物体的速度最终会“爆炸”，系统将变得不稳定；如果数值方法趋于从系统中移除能量，将具有整体阻尼效果，系统将稳定
+- `Alternatives to Explicit Euler` 显示欧拉误差大、稳定性差，一般不用于通用动态模拟，解决 ODE 的各种其他数值方法如下
+  - `Backward Euler` 一阶方法
+  - `Midpoint Euler` 二阶方法
+  - `Runge-Kutta` Runge-Kutta 方法家族，四阶的 Runge-Kutta 方法（RK4）特别受欢迎
+- `Verlet Integration` 最常用的 ODE 数值解法，有两个变体
+  - `Regular Verlet` 由两个泰勒级数展开相加得到
+
+    $$
+    r(t_1+\Delta{t})=r(t_1)+\dot{r}(t_1)\Delta{t}+\frac{1}{2}\ddot{r}(t_1)\Delta{t}^2+\frac{1}{6}r^{(3)}(t_1)\Delta{t}^3+O(\Delta{t}^4)
+    $$
+    $$
+    r(t_1-\Delta{t})=r(t_1)-\dot{r}(t_1)\Delta{t}+\frac{1}{2}\ddot{r}(t_1)\Delta{t}^2-\frac{1}{6}r^{(3)}(t_1)\Delta{t}^3+O(\Delta{t}^4)
+    $$
+    $$
+    r(t_1+\Delta{t})=2r(t_1)-r(t_1-\Delta{t})+a(t_1)\Delta{t}^2+O(\Delta{t}^4)
+    $$
+
+    - 速度可是使用下式模拟，误差较大
+
+      $$
+      v(t_1+\Delta{t})=\frac{r(t_1+\Delta{t})-r(t_1)}{\Delta{t}}+O(\Delta{t})
+      $$
+
+  - `Velocity Verlet` 更常用，需要四步处理
+
+    $$
+    r(t_1+\Delta{t})=r(t_1)+v(t_1)\Delta{t}+\frac{1}{2}a(t_1)\Delta{t}^2 \tag{1}
+    $$
+    $$
+    v(t_1+\frac{1}{2}\Delta{t})=v(t_1)+\frac{1}{2}a(t_1)\Delta{t} \tag{2}
+    $$
+    $$
+    a(t_1+\Delta{t})=a(t_2)=\frac{1}{m}F(t_2,r(t_2),v(t_2)) \tag{3}
+    $$
+    $$
+    v(t_1+\Delta{t})=v(t_1+\frac{1}{2}\Delta{t})+\frac{1}{2}a(t_1+\Delta{t})\Delta{t} \tag{4}
+    $$
+
+    - 第 (3) 步中，力函数与下个时间步的位置和速度相关，$r(t_2)$ 已经在第 (1) 步中计算，所以如果力与速度无关，则我们已经得到了所有需要的信息。如果力与速度相关，我们必须得到下个时间步的近似速度，也许使用显示欧拉方法
