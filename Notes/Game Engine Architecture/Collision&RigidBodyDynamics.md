@@ -229,3 +229,53 @@
   a(t)=\frac{\mathrm{d}v(t)}{\mathrm{d}t}=\dot v(t) \\
   =\frac{\mathrm{d}^2r(t)}{\mathrm{d}t^2}=\ddot r(t)
   $$
+- `Force and Momentum` 力和动量。力定义为导致具有质量的物体加速或减速的作用，有大小和方向，用向量表示，通常表示为 $F$。
+  - $N$ 个力作用于一个刚体时，体的线性运动的净效应
+
+    $$
+    F_{net}=\sum_{i=1}^NF_i
+    $$
+
+  - 牛顿第二定律
+
+    $$
+    F(t)=ma(t)=m\ddot{r}(t)
+    $$
+
+  - 体的线性速度和质量的乘积称为线性动量（`linear momentum`）
+
+    $$
+    p(t)=mv(t)
+    $$
+
+  - 当体的质量不恒定，例如火箭的燃料逐渐耗尽转换为能量时，力的正确公式
+
+    $$
+    F(t)=\frac{\mathrm{d}p(t)}{\mathrm{d}t}=\frac{\mathrm{d}(m(t)v(t))}{\mathrm{d}t}
+    $$
+
+### Solving the Equations of Motion
+
+- 刚体动力学的核心问题是给定一组已知的作用于体的力，解决体的运动
+- `Force as a Function` 力可以是不变的，也可以是关于时间、体的位置、体的速度或其他量的一个函数
+
+  $$
+  F(t,r(t),v(t),\dots)=ma(t)=m\ddot{r}(t)
+  $$
+
+  - 例如，弹簧施加的力与它拉伸后离自然静止位置的距离成正比，机械粘滞阻尼器（缓冲器）施加的力与缓冲器活塞的速度成正比
+- `Ordinary Differential Equations / ODE` 常微分方程，通常是一个等式，包含一个自变量的函数和该函数的各阶导数，如果自变量是时间，函数是 $x(t)$，则一个 ODE 的形式如下
+
+  $$
+  \frac{\mathrm{d}^nx}{\mathrm{d}t^n}=f(t,x(t),
+  \frac{\mathrm{d}x}{\mathrm{d}t}),
+  \frac{\mathrm{d}^2x}{\mathrm{d}t^2},\dots,
+  \frac{\mathrm{d}^{n-1}x}{\mathrm{d}t^{n-1}})
+  $$
+
+  - 力是关于时间、位置和速度的的函数，如下式，明显是一个 ODE，我们希望解决这个 ODE 来得到 $v(t)$ 和 $r(t)$
+
+    $$
+    \ddot{r}(t)=\frac{1}{m}(t,r(t),\dot{r}(t))
+    $$
+- `Analytical Solutions` 极少的情况下，运动的微分方程可以通过分析求解，这意味着可以找到一个简单的封闭函数描述体在所有可能时间 $t$ 的位置。然而这在游戏物理中几乎不可能，因为某些微分方程的封闭解决方案是未知的，而且游戏是交互式模拟，通常无法预测物体在某个时间所受的力。这个经验法则当然也有例外，例如愤怒的小鸟
