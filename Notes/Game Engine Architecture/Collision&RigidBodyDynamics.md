@@ -276,7 +276,7 @@
   - 力是关于时间、位置和速度的的函数，如下式，明显是一个 ODE，我们希望解决这个 ODE 来得到 $v(t)$ 和 $r(t)$
 
     $$
-    \ddot{r}(t)=\frac{1}{m}(t,r(t),\dot{r}(t))
+    \ddot{r}(t)=\frac{1}{m}F(t,r(t),\dot{r}(t))
     $$
 - `Analytical Solutions` 极少的情况下，运动的微分方程可以通过分析求解，这意味着可以找到一个简单的封闭函数描述体在所有可能时间 $t$ 的位置。然而这在游戏物理中几乎不可能，因为某些微分方程的封闭解决方案是未知的，而且游戏是交互式模拟，通常无法预测物体在某个时间所受的力。这个经验法则当然也有例外，例如求解封闭表达式来决定抛射物要击中预定目标的必须的发射速度很常见
 
@@ -344,3 +344,36 @@
     $$
 
     - 第 (3) 步中，力函数与下个时间步的位置和速度相关，$r(t_2)$ 已经在第 (1) 步中计算，所以如果力与速度无关，则我们已经得到了所有需要的信息。如果力与速度相关，我们必须得到下个时间步的近似速度，也许使用显示欧拉方法
+
+### Angular Dynamics in Two Dimensions
+
+- `Angular dynamics` 对施加的力响应的体旋转运动的研究称为角动力学。二维中刚体可以视为一块薄薄的材料，这样的体在一些物理文章中称为平面层（`plane lamina`），它的所有线性运动发生在 xy 平面中，所有的旋转运动都关于 z 轴
+- `Orientation` 二维刚体的方向使用一个角度 $\theta$ 完全描述，这个角度相对于商定的零旋转，单位为弧度（$rad$），例如一辆赛车正面朝自然空间 x 轴正方向时可以定义 $\theta=0$。这个角度是关于时间的函数，所以表示为 $\theta(t)$
+- `Angular Speed and Acceleration` 角速度和加速度，角速度测量体的旋转角度随时间变化的速率，单位为弧度每秒（$rad/s$），表示为 $w(t)$；加速度测量角速度的变化速率，单位为弧度每秒平方（$rad/s^2$），表示为 $\alpha(t)$
+
+  Angular | Linear
+  :- | :-
+  $w(t)=\frac{\mathrm{d}\theta(t)}{\mathrm{d}t}=\dot{\theta}(t)$ | $v(t)=\frac{\mathrm{d}r(t)}{\mathrm{d}t}=\dot{r}(t)$
+  $\alpha(t)=\frac{\mathrm{d}w(t)}{\mathrm{d}t}=\dot{w}(t)=\ddot{\theta}(t)$ | $a(t)=\frac{\mathrm{d}v(t)}{\mathrm{d}t}=\dot{v}(t)=\ddot{r}(t)$
+
+  - 这边速度表示为 speed 而不是 velocity，因为二维中角速度是标量
+- `Moment of Inertia` 惯性矩，是质量的旋转当量，质量描述改变一个点质量的线性速度的难易程度，而惯性矩描述改变一个刚体关于特定轴的旋转速度的难易程度，质量分布越集中在旋转轴附近，难度越小，惯性矩越小。通常表示为 $I$，在二维中是一个标量
+- `Torque` 扭矩。如果力的作用线穿过体的质量中心，则这个力只产生线性运动，否则除了线性运动外这个力还引入一个称为扭矩的旋转力。假设从质量中心到力 $F$ 的作用点的向量可以表示为 $r$，则 $F$ 产生的扭矩 $N$ 为 $N=r\times F$，如下图
+
+  ![LNR](Images/Torque.PNG)
+
+  - 多个扭矩可以像多个力一样简单相加，表示为 $N_{net}$
+  - 在二维中扭矩总是平行于 z 轴，所以二维扭矩可以表示为标量 $N_z$。力与线性加速度和质量有关，同样地，扭矩与角加速度和惯性矩有关
+
+    Angular | Linear
+    :- | :-
+    $N_z(t)=I\alpha(t)=I\dot{w}(t)=I\ddot{\theta}(t)$ | $F(t)=ma(t)=m\dot{v}(T)=m\ddot{r}(t)$
+
+- `Solving the Angular Equations of Motion in Two Dimensions` 解决二维角运动方程可以使用应用于线性动力学问题中的相同的数值积分技术。我们期望解决的 ODE 如下
+
+  Angular | Linear
+  :- | :-
+  $N_{net}(t)=I\dot{w}(t)$ | $F_{net}(t)=m\dot{v}(T)$
+  $w(t)=\dot{\theta}(t)$ | $v(t)=\dot{r}(t)$
+
+### Angular Dynamics in Three Dimensions
