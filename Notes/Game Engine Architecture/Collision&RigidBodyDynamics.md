@@ -360,7 +360,7 @@
 - `Moment of Inertia` 惯性矩，是质量的旋转当量，质量描述改变一个点质量的线性速度的难易程度，而惯性矩描述改变一个刚体关于特定轴的旋转速度的难易程度，质量分布越集中在旋转轴附近，难度越小，惯性矩越小。通常表示为 $I$，在二维中是一个标量
 - `Torque` 扭矩。如果力的作用线穿过体的质量中心，则这个力只产生线性运动，否则除了线性运动外这个力还引入一个称为扭矩的旋转力。假设从质量中心到力 $F$ 的作用点的向量可以表示为 $r$，则 $F$ 产生的扭矩 $N$ 为 $N=r\times F$，如下图
 
-  ![LNR](Images/Torque.PNG)
+  ![Torque](Images/Torque.PNG)
 
   - 多个扭矩可以像多个力一样简单相加，表示为 $N_{net}$
   - 在二维中扭矩总是平行于 z 轴，所以二维扭矩可以表示为标量 $N_z$。力与线性加速度和质量有关，同样地，扭矩与角加速度和惯性矩有关
@@ -377,3 +377,50 @@
   $w(t)=\dot{\theta}(t)$ | $v(t)=\dot{r}(t)$
 
 ### Angular Dynamics in Three Dimensions
+
+- `The Inertia Tensor` 惯性张量。三维中，刚体的旋转质量表示为 $3\times 3$ 矩阵，这个矩阵称为惯性张量，通常用 $I$ 表示
+
+  $$
+  I=\begin{bmatrix}
+  I_{xx} & I_{xy} & I_{xz} \\
+  I_{yx} & I_{yy} & I_{yz} \\
+  I_{zx} & I_{zy} & I_{zz}
+  \end{bmatrix}
+  $$
+
+  - 这个矩阵的对角线元素为体关于它三个主轴的惯性矩，非对角线元素称为惯性积（`products of inertia`）。当体关于三个主轴分别对称时惯性积为零，当惯性积非零时常常产生物理上现实但是普通玩家可能认为是“错误”的不直观的动作，所以游戏引擎中惯性张量通常简化为三元向量 $\begin{bmatrix}I_{xx} & I_{yy} & I_{zz}\end{bmatrix}$
+- `Orientation in Three Dimensions` 三维中体的方向可以表示为三个欧拉角 $\begin{bmatrix}\theta_x & \theta_y & \theta_z\end{bmatrix}$，每个角分别表示体关于一个主轴的旋转，但是欧拉角存在万向节锁定问题且数学上不好处理，所以三维中体的方向通常表示为 $3\times 3$ 矩阵 $R$ 或四元数 $q$。商定的零旋转可以是任意方向，但是在游戏所有组件间要一致
+- `Angular Velocity and Momentum in Three Dimensions` 三维角速度和角动量，角速度不守恒（`not conserved`），动量守恒，所以我们在动态模拟中将角动量作为主要量，角速度作为次要量，而不是像线性速度一样作为主要量，通常在模拟的时间步中只在决定角动量值后才决定角速度值
+  - 角速度向量 $\mathbf{w}(t)$ 可以看作定义旋转轴的单位向量 $\mathbf{u}$ 用体关于旋转轴的二维角速度 $w_u=\dot{\theta}_u$ 缩放
+
+    $$
+    \mathbf{w}(t)=w_u(t)\mathbf{u}=\dot{\theta}_u(t)\mathbf{u}
+    $$
+  
+  - $\mathbf{w}(t)$ 不守恒，因为旋转轴可能会不停变化方向
+
+    ![AngularVelocityNotConserved](Images/AngularVelocityNotConserved.PNG)
+
+  - 角动量是线性动量的旋转当量
+
+    Angular 3D | Linear
+    :- | :-
+    $\mathbf{L}(t)=\mathbf{Iw}(t)$ | $\mathbf{p}(t)=m\mathbf{v}(t)$
+
+- `Torque in Three Dimensions` 三维中扭矩的计算同样满足 $N=r\times F$，但总是用角动量表示，因为角速度不守恒
+
+  $$
+  N=I\alpha(t)=I\frac{\mathrm{d}w(t)}{\mathrm{d}t}=\frac{\mathrm{d}}{\mathrm{d}t}(Iw(t))=\frac{\mathrm{d}L(t)}{\mathrm{d}t}
+  $$
+
+- `Solving the Equations of Angular Motion in Three Dimensions` 解决三维角运动方程不能使用与线性运动和二维角运动完全相同的方法，因为三维角运动常微分方程有以下两个不同点
+  - 要求解角动量而不是角速度
+  - 给定三元向量形式的角速度，无法直接求解四元数形式的方向，需要额外的处理
+- 可以构造角速度四元数 $w=\begin{bmatrix}w_x & w_y & w_z & 0\end{bmatrix}$，得到 ODE 如下
+
+  Angular 3D | Linear
+  :- | :-
+  $N_{net}=\dot{L}(t)$ | $F_{net}=\dot{p}(t)$
+  $\mathbf{w}(t)=I^{-1}L(t)$ | $v(t)=m^{-1}p(t)$
+  $w(t)=\begin{bmatrix}\mathbf{w}(t) & 0\end{bmatrix}$ | $v(t)=\dot{r}(t)$
+  $\frac{1}{2}w(t)q(t)=\dot{q}(t)$ |
