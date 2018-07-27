@@ -424,3 +424,69 @@
   $\mathbf{w}(t)=I^{-1}L(t)$ | $v(t)=m^{-1}p(t)$
   $w(t)=\begin{bmatrix}\mathbf{w}(t) & 0\end{bmatrix}$ | $v(t)=\dot{r}(t)$
   $\frac{1}{2}w(t)q(t)=\dot{q}(t)$ |
+
+### Collision Response
+
+- 当物体相互碰撞时，动态模拟必须采取措施确保它们对碰撞做出真实的反应，并且在模拟步骤完成后永远不会处于互相穿透的状态，这称为碰撞响应（`collision response`）
+- `Energy` 力的作用给刚体系统增加或减少能量。能量有两种形式，物体相对于力场（如重力场或磁场）所具有的的势能（`potential energy`）$V$，物体相对于系统中其他物体移动产生的动能（`kinetic energy`）$T$，总能量 $E=V+T$ 是守恒量
+
+  $$
+  T_{linear}=\frac{1}{2}mv^2 \\
+  T_{linear}=\frac{1}{2}p\cdot v \\
+  T_{angular}=\frac{1}{2}L\cdot w
+  $$
+
+- `Impulsive Collision Response` 脉冲碰撞响应
+  - `Newton’s law of restitution for instantaneous collisions with no friction` 无摩擦瞬间碰撞的牛顿恢复法则。真实世界中两个物体相互碰撞时会轻微挤压然后反弹，在这个过程中速度会改变，并且部分能量转换为声音和热量损失，大多数刚体动态模拟将这些细节近似为一个简单模型，这个模型基于对碰撞物体的动量和动能的分析，称为无摩擦瞬间碰撞的牛顿恢复法则，它对碰撞做了如下的简化假设
+    - 碰撞力的作用时间无限短，称为一个理想化的脉冲（`impulse`），这导致物体的速度瞬间改变
+    - 物体表面的接触点没有摩擦力，碰撞脉冲没有切向分量
+    - 碰撞中物体间复杂分子交互的本质可以近似为称为恢复系数（`coefficient of restitution`）的量，通常用符号 $\varepsilon$ 表示。这个系数描述碰撞中损失多少能量，$\varepsilon=1$ 时，碰撞是完全弹性（`elastic`）的，无能量损失；$\varepsilon=0$ 时，碰撞是完全非弹性（`inelastic`）或完全塑性（`plastic`）的，物体的动能都会损失，并且碰撞后会粘在一起沿着碰撞前相互质心移动的方向继续移动
+  - 所有碰撞分析基于动量和动能守恒，对于两个物体的碰撞，有
+
+    $$
+    \mathbf{p_1+p_2=p_1'+p_2'} \\
+    或\ m_1\mathbf{v_1}+m_2\mathbf{v_2}=m_1'\mathbf{v_1'}+m_2'\mathbf{v_2'}
+    $$
+    $$
+    \frac{1}{2}m_1v_1^2+\frac{1}{2}m_2v_2^2=\frac{1}{2}m_1'v_1'^2+\frac{1}{2}m_2'v_2'^2+T_{lost}
+    $$
+  - 为了使用牛顿恢复法则解决碰撞，我们给两个物体应用一个理想化的脉冲，表示为 $\Delta{p}$，$\Delta{p}=m\Delta{v}$，然而大多数物理文章使用符号 $\hat{p}$ 代替
+  - 因为我们假设碰撞中没有摩擦，所以接触点的脉冲向量与两个表面都垂直，所以脉冲可以表示为脉冲标量与单位向量 $\mathbf{n}$ 的乘积，$\mathbf{n}$ 为两个表面的法线
+  
+    $$
+    \hat{\mathbf{p}}=\hat{p}\mathbf{n}
+    $$
+  
+  - 假设表面法线指向物体 1，则物体 1 受脉冲 $\mathbf{\hat{p}}$ ，物体 2 受脉冲 $-\mathbf{\hat{p}}$
+
+    $$
+    \begin{matrix}
+    \mathbf{p_1'=p_1+\hat{p}} & \mathbf{p_2'=p_2-\hat{p}} \\
+    m_1\mathbf{v_1'}=m_1\mathbf{v_1}+\mathbf{\hat{p}} & m_2\mathbf{v_2'}=m_2\mathbf{v_2}-\mathbf{\hat{p}} \\
+    \mathbf{v_1'}=\mathbf{v_1}+\frac{\mathbf{\hat{p}}}{m_1}\mathbf{n} & \mathbf{v_2'}=\mathbf{v_2}+\frac{\mathbf{\hat{p}}}{m_2}\mathbf{n}
+    \end{matrix}
+    $$
+
+  - 恢复系数提供了碰撞前后物体相对速度的关键关系
+
+    $$
+    \mathbf{v_2'-v_1'}=\varepsilon(\mathbf{v_2-v_1})
+    $$
+
+  - 得到 $\mathbf{\hat{p}}$
+
+    $$
+    \mathbf{\hat{p}}=\hat{p}\mathbf{n}=\frac{(\varepsilon+1)(\mathbf{v_2\cdot n-v_1\cdot n})}{\frac{1}{m_1}+\frac{1}{m_2}}\mathbf{n}
+    $$
+
+    - 如果恢复系数为 1 且物体 2 的质量无限大，则 $1/m_2=0$，$v_2=0$，上式简化如下
+
+      $$
+      \mathbf{\hat{p}}=-2m_1\mathbf{(v_1\cdot n)n}
+      $$
+      且
+      $$
+      \mathbf{v_1'}=\frac{\mathbf{p_1+p_2}}{m_1}=\mathbf{v_1}-2m_1\mathbf{(v_1\cdot n)n}
+      $$
+
+    - 如果考虑物体的旋转，解决方案更加复杂
