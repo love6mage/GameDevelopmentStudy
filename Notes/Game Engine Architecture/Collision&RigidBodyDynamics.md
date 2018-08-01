@@ -1,5 +1,48 @@
 # Collision and Rigid Body Dynamics
 
+<!-- TOC -->
+
+- [Collision and Rigid Body Dynamics](#collision-and-rigid-body-dynamics)
+  - [Do You Want Physics in Your Game](#do-you-want-physics-in-your-game)
+    - [Things You Can Do with a Physics System](#things-you-can-do-with-a-physics-system)
+    - [Is Physics Fun](#is-physics-fun)
+    - [Impact of Physics on a Game](#impact-of-physics-on-a-game)
+  - [Collision/Physics Middleware](#collisionphysics-middleware)
+    - [I-Collide, SWIFT, V-Collide and RAPID](#i-collide-swift-v-collide-and-rapid)
+    - [ODE](#ode)
+    - [Bullet](#bullet)
+    - [TrueAxis](#trueaxis)
+    - [PhysX](#physx)
+    - [Havok](#havok)
+    - [Physics Abstraction Layer (PAL)](#physics-abstraction-layer-pal)
+    - [Digital Molecular Matter (DMM)](#digital-molecular-matter-dmm)
+  - [The Collision Detection System](#the-collision-detection-system)
+    - [Collidable Entities](#collidable-entities)
+    - [The Collision/Physics World](#the-collisionphysics-world)
+    - [Shape Concepts](#shape-concepts)
+    - [Collision Primitives](#collision-primitives)
+    - [Collision Testing and Analytical Geometry](#collision-testing-and-analytical-geometry)
+    - [Performance Optimizations](#performance-optimizations)
+    - [Collision Queries](#collision-queries)
+    - [Collision Filtering](#collision-filtering)
+  - [Rigid Body Dynamics](#rigid-body-dynamics)
+    - [Some Foundations](#some-foundations)
+    - [Solving the Equations of Motion](#solving-the-equations-of-motion)
+    - [Numerical Integration](#numerical-integration)
+    - [Angular Dynamics in Two Dimensions](#angular-dynamics-in-two-dimensions)
+    - [Angular Dynamics in Three Dimensions](#angular-dynamics-in-three-dimensions)
+    - [Collision Response](#collision-response)
+    - [Constraints](#constraints)
+    - [Controlling the Motions of Rigid Bodies](#controlling-the-motions-of-rigid-bodies)
+    - [The Collision/Physics Step](#the-collisionphysics-step)
+  - [Integrating a Physics Engine into Your Game](#integrating-a-physics-engine-into-your-game)
+    - [Linking Game Objects and Rigid Bodies](#linking-game-objects-and-rigid-bodies)
+    - [Updating the Simulation](#updating-the-simulation)
+    - [Example Uses of Collision and Physics in a Game](#example-uses-of-collision-and-physics-in-a-game)
+  - [Advanced Physics Features](#advanced-physics-features)
+
+<!-- /TOC -->
+
 ## Do You Want Physics in Your Game
 
 - `collision detection system` 碰撞检测系统，游戏引擎的核心组件之一，确保物体不会相互穿过，通常与物理引擎（`physics engine`）紧密集成
@@ -638,11 +681,62 @@
 ### Example Uses of Collision and Physics in a Game
 
 - `Simple Rigid Body Game Objects` 简单的物理模拟物体如武器、可以捡起和投掷的石头、空弹匣、家具、架上可以被射击的物体等，可以使用一个自定义对象然后引用物理世界的一个刚体创建，也可以创建一个附加组件类处理简单刚体碰撞和物理，允许此功能添加到引擎的几乎任意类型的游戏对象中。简单物理对象通常可以运行时动态改变运动类型
-- `Bullet Traces` 激光和抛射武器是许多游戏的重要组成部分。有时射弹由射线投射实现，但是这种方法没有考虑飞行时间和重力影响，如果这些细节对于游戏很重要，可以用随时间推移穿越物理世界的真实刚体建模射弹，最后生还者中的投掷砖块就是这样实现的。实现激光束和射弹需要考虑和处理的几个常见问题如下
+- `Bullet Traces` 激光和弹丸武器是许多游戏的重要组成部分。有时射弹由射线投射实现，但是这种方法没有考虑飞行时间和重力影响，如果这些细节对于游戏很重要，可以用随时间推移穿越物理世界的真实刚体建模射弹，最后生还者中的投掷砖块就是这样实现的。实现激光束和射弹需要考虑和处理的几个常见问题如下
   - `Bullet Ray Casting` 使用射线投射检测子弹命中时有个问题：射线是否来自相机焦点或玩家角色手中的枪尖？这在第三人称射击游戏中尤其成问题。通常必须使用各种技巧如保持合理的视觉效果确保玩家能感觉到他正在射击他瞄准的目标
   - `Mismatches between Collision and Visible Geometry` 碰撞几何和视觉几何的不匹配会导致有些情况下玩家能击中目标但碰撞查询失败。一个解决方法是使用渲染查询，例如在一个渲染传递期间生成一个纹理，纹理的每个像素保存对应的物体的 ID，然后可以查询纹理判断敌人或其他合适目标是否占据了武器十字线下的像素
   - `Aiming in a Dynamic Environment` 如果射弹花费有限时间命中目标，则 AI 角色必须“领先”射击
   - `Impact Effects` 子弹命中目标时我们可能想触发一个音效、一个粒子效果、加一个贴花或其他任务
     - Unreal 引擎中通过物理材质（`physical materials`）系统实现，视觉几何不仅使用视觉材质标记，还使用物理材质标记，前者定义表面看起来如何，后者定义它如何响应物理交互，包括音效、子弹“爆管”粒子效果、贴花等
     - 顽皮狗使用一个相似系统：碰撞几何可以用多边形属性（`polygon attributes`）标记，多边形属性定义特定物理行为，如脚步声。但是子弹冲击以特殊方式处理，因为它与视觉几何直接交互，而不是粗略碰撞几何。视觉几何可以用可选的子弹效果（`bullet effect`）标记，子弹效果为可能冲击表面的每个射弹类型定义子弹爆管、音效和贴花
-- `Grenades`
+- `Grenades` 手榴弹有时实现为自由移动的物理物体，这导致了严重的失控，可以施加人为的力或脉冲获得一些控制，例如手榴弹第一次反弹时施加一个极大的空气阻力，限制它从目标弹开的距离
+  - 有些游戏团队完全手动控制手榴弹的运动，提前计算手榴弹的轨迹弧，使用一系列射线投射判断它释放后击中的目标，这个轨迹甚至可以通过某种屏幕显示呈现给玩家，当手榴弹投掷后，它将沿弧移动，然后仔细控制它的反弹确保不会离目标太远，同时看起来自然
+- `Explosions` 游戏中，爆炸通常有多个组件：像火球和烟雾这样的某种视觉效果；模拟爆炸声音的音效；它对世界中物体的影响和一个影响其尾迹中物体的不断增加的伤害半径
+  - 物体在爆炸半径中时，它的健康度通常会降低，我们通常传递一些动作模拟冲击波的影响，这可以用动画实现，例如角色对爆炸的反应
+  - 我们可能希望允许冲击反应完全由动态模拟驱动，这可以通过让爆炸对其半径中的任何合适物体应用脉冲实现，这些脉冲可以先归一化从爆炸中心到影响物体中心的向量，然后用爆炸的程度缩放来计算，并且可能随离爆炸中心的距离增加而减小
+  - 爆炸可以与其他引擎系统交互，例如传递给动画树叶系统一个力，导致草、植物和树木由于爆炸的冲击波的影响暂时弯曲
+- `Destructible Objects` 可破坏物体比较特殊，它们开始处于无损状态，看起来是单个凝聚的物体，但是能够打破为多个部分。我们可能希望这些部分一个接一个地破开，允许物体逐渐“缩小”，或者我们可能只需要单一的毁灭性爆炸
+  - 像 DMM 这样的变形体模拟可以自然地处理可破坏物体，但是我们也可以使用刚体动态模拟实现可破坏物体，通常将一个模型分成一些可破坏部分，每个部分分配一个单独的刚体，Havok Destruction 使用这个方法
+  - 因为性能优化的原因，我们可能会选择使用特殊的“无损”版本的视觉和碰撞几何，它们构造为单个实心部分，当物体需要开始破开时，这个模型换成“损坏”版本。其他情况下，我们可能每个时刻都将物体建模为多个单独的部分，例如一堆砖块或一堆锅碗瓢盆
+  - 建模多部分物体，我们可以简单堆叠多个刚体，让物理模拟管理它们，这在高质量的物理引擎中可以使用，尽管要做到正确并非总是微不足道。但是这无法实现好莱坞风格一般的效果，例如
+    - 我们可能想定义物体的结构，有些部分是不可破坏的（`indestructible`），像墙的地基或汽车底盘
+    - 有些部分是非结构性的（`non-structural`），被子弹或其他物体击中时只是脱落
+    - 有些部分是结构性的（`structural`），被击中时除了脱落，还会给位于它们上面的其他部分传递力
+    - 有些部分是爆炸性的（`explosive`），被击中时会在整个结构中传播伤害
+    - 我们可能希望一些部分是角色的有效掩护（`cover`）点而其他部分不是，这意味着可破坏物体系统可能与掩护系统有一些联系
+    - 我们可能还希望可破坏物体有健康度的概念，伤害可以累积，直到整个物体最终崩溃；或每个部分有一个健康度，在它被允许打破之前需要多次击中或碰撞
+    - 可以使用约束允许破开的部分悬挂在物体上而不是完全脱离物体
+    - 我们可能还希望我们的结构花费时间完全崩溃，例如一座长桥的一端被击中爆炸后，坍塌应该从一端到另一端缓慢传播，使桥看起来十分巨大。这是物理系统不会免费提供的功能的一个例子，可以通过游戏驱动运动类型的灵活使用来实现
+- `Character Mechanics` 在基于角色的游戏中，人形或动物角色的运动通常太复杂而无法使用力和脉冲充分控制，我们通常将角色建模为一组游戏驱动的胶囊形状的刚体，每个刚体与角色动画骨架中的一个关节连接。这些刚体主要用于子弹命中检测或生成次要效果，如角色手臂将物体从桌上撞落。因为这些刚体是游戏驱动的，无法避免它们与物理世界中无法移动物体的相互穿透，所以取决于动画师确保角色的动作看起来可信
+  - 为了在物理世界中移动角色，大多数游戏使用球或胶囊投射来探测所需运动方向，手动解决碰撞，这允许我们做一些很酷的事情
+    - 角色以倾斜角度进入墙壁的时候让他沿墙壁滑行
+    - 允许角色走上低路边缘时“弹出”而不是受阻
+    - 避免角色走下低路边缘时进入“坠落”状态
+    - 避免角色走上陡峭斜坡，大多数游戏有一个截止角度，超过这个角度角色会从斜坡上下滑而不是走上去
+    - 调整动画以适应碰撞，例如角色以大概 90 度角直接走进墙壁时可以让角色一直走太空步，或减缓他的动画。也可以做些更华而不实的事情，例如播放一个角色用手扶墙壁的动作然后明智地进入空闲状态，直到移动方向改变
+    - Havok 提供了一个角色控制系统处理很多这种事情，一个角色建模为胶囊形幻影，每帧移动，寻找潜在的新位置。幻影维护一个碰撞接触歧管（`manifold`，一系列接触面，清理干净以消除噪音），这个歧管可以每帧被分析来确定如果最佳地移动角色，调整动画，等等
+- `Camera Collision` 许多游戏中相机跟随游戏世界中的玩家角色或车辆，通常可以被玩家以有限的方式旋转或控制，这样的游戏中不允许相机与场景中的几何相互穿透十分重要，因为会破坏真实感，所以在许多游戏中相机系统是碰撞引擎的一个重要客户端
+  - 大多数相机碰撞系统的基本思想为用一个或多个球幻影围绕虚拟相机，或用球投射查询检测相机何时接近与某物体碰撞。这个系统可以以某些方式调整相机的位置和方向作为响应，避免相机实际穿过物体之前的潜在碰撞
+  - 这实际上是一个十分棘手的问题，许多游戏团队有一个专门的工程师在整个项目期间负责相机系统的工作，需要关注的最相关的几个问题如下
+    - 缩放镜头避免碰撞在各种情况下工作得很好。在第三人称游戏中，总是可以缩放成第一人称视角而不会引起太多问题（除了在过程中确保相机与角色头部不相互穿透）
+    - 为了应对碰撞大幅改变相机的水平角度通常是一个糟糕的主意，这往往会打乱玩家对镜头的控制。不过，依赖于玩家当时期望做的事情，有时一定程度的水平调整可以很好工作，例如玩家仅仅移动通过世界时，相机方向的改变可能感觉很自然，但是当角色在激烈战斗中，玩家在瞄准目标时，相机方向的改变将会让他生气
+    - 可以一定程度地调整相机的垂直角度，不要调整太多，否则玩家将迷失地平线，最后向下看玩家角色头顶
+    - 一些游戏允许相机沿垂直平面中一条弧移动，可能用样条描述。这允许单个 HID 通过直观的方式控制相机的缩放和垂直角度（神秘海域和最后生还者中的相机的工作原理是这样的）。当相机要与物体碰撞时，可以自动沿同一条弧移动来避免碰撞
+    - 除了相机后和相机旁边是什么，考虑相机前是什么也十分重要，例如镜头与角色间有一个柱子或其他角色如何处理。一些游戏中，这些冒犯的物体变成半透明；其他游戏中，相机放大或左右摆动避免碰撞，这对于玩家来说可能是好的，也可能是不好的，处理这种情况的方式决定了游戏的感知质量
+- `Rag Doll Integration` 游戏中集成布娃娃物理的几个问题
+  - 布娃娃物理使用的刚体可能与角色活着时对应的刚体不同，因为两个碰撞模型有不同的需求，如果角色活着时刚体相互穿透，变成布娃娃时会导致碰撞解决系统传递巨大脉冲让四肢向外爆炸
+  - 如何从有意识状态到无意识状态过渡也是一个问题，简单的动画生成姿势与物理生成姿势间的 LERP 混合通常不能很好工作，因为物理姿势非常快地偏离动画姿势（两个完全不相关姿势的混合通常看起来不自然）。可以在过渡中使用驱动约束（`Powered Constraints`）
+  - 角色有意识时（刚体为游戏驱动）经常与地面几何相互穿透，这意味着角色过渡为布娃娃（物理驱动）模式时刚体可能在其他坚固物体内部，会引起巨大脉冲，导致游戏中布娃娃相对狂野的行为。为了避免这个问题，最好仔细制作死亡动画，让角色四肢尽可能保持无碰撞；游戏驱动模式期间通过幻影或碰撞回调检测碰撞也很重要，这样可以在角色身体的任意部分接触坚固物体时将角色放入布娃娃模式
+  - 即使采取了这些措施，布娃娃仍然有卡在其他物体内的倾向。单面碰撞是让布娃娃看起来很好的一个非常重要的特性，如果肢体部分嵌入墙体，将会被推出墙，而不是呆在里面。然后这无法解决所有问题，例如角色在快速移动或到布娃娃的过渡没有正确执行，布娃娃中一个刚体最终在薄壁的另一边，这导致角色悬在半空中而不是正确落在地上
+  - 另一个有用的布娃娃特性是无意识角色重获意识并重新站起的能力。实现这个需要一个合适的站起动画。我们要找到一个动画，它的零帧姿势最接近匹配布娃娃静止后的姿势，这可以通过只匹配一些关键关节的姿势完成，另一个方法是使用驱动约束引导布娃娃进入一个适合在静止时站起的姿势
+  - 设置布娃娃约束是非常棘手的事情，需要投入巨大精力，高质量的物理引擎如 Havok 提供了丰富的内容创造工具允许美术师在DCC 包如 Maya 中设置约束，然后实时测试它们在游戏中看起来如何
+
+## Advanced Physics Features
+
+- 具有约束的刚体动态模拟可以覆盖游戏中惊人范围的物理驱动效果，然而这样一个系统有它的局限性，最新的研究和开发正在寻求将物理引擎扩展到约束刚体之外，如
+  - `Deformable bodies` 物理引擎开始提供对变形体的支持，DMM 是这样一个引擎的出色例子
+  - `Cloth` 布料可以建模为一片点质量，通过刚弹簧连接。布料非常难以模拟正确，因为布料和其他物体间的碰撞、模拟的数值稳定等方面存在许多困难。话虽如此，许多游戏和第三方物理 SDK 如 Havok 提供了强有力且表现良好的布料模拟用于游戏和其他实时应用
+  - `Hair` 头发可以用大量小的物理模拟丝建模，或者可以使用更简单的方法，多片布料通过纹理映射看起来像头发，布料模拟被微调使角色的头发移动更可信。最后生还者中 Ellie 的头发的工作原是这样的。头发模拟和渲染仍然是一个活跃的研究领域，游戏中头发的质量将会继续改善
+  - `Water surface simulations and buoyancy` 浮力可以通过特殊的系统实现（不属于物理系统本身），或者在物理模拟中通过力建模。水面的有机运动通常只是渲染效果，完全不影响物理模拟。从物理角度看，水面通常建模为平面，对于水面的大位移，整个平面可能会移动。一些游戏团队和研究人员正在推动这些模拟的极限，允许动态水面、波峰、逼真的电流模拟等
+  - `General fluid dynamics simulations` 一般流体动力学模拟，现在主要落入专业模拟库的领域，然而这是一个活跃的研究和开发领域，一些游戏已经使用流体模拟产生了一些惊人的视觉效果
+  - `Physically based audio synthesis` 基于物理的音频合成。物理模拟物体碰撞、反弹、滚动和滑动需要生成合适的声音加强模拟的可信度。这些声音可以通过播放提前录制的音频片段在游戏中创建，但是这种声音的动态合成正在变为一个可行的替代方案，并且目前是一个活跃的研究领域
+  - `GPGPU` 随着 GPU 变得越来越强大，已经转向利用它们令人敬畏的并行处理能力完成图形以外的任务，GPU 通用计算的一个明显应用是碰撞和物理模拟，例如 PS4 版本的最后生还者中，顽皮狗的布料模拟引擎被移植到完全在 GPU 上运行
