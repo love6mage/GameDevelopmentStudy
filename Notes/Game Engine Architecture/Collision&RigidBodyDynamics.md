@@ -587,3 +587,62 @@
   - 运动类型也可以为 Havok 提供一些关于动态物体惯性张量的提示，因此 “dynamic” 类型细分为 “dynamic with sphere inertia” 和 “dynamic with box inertia” 等，用于 Havok 优化
 
 ### Updating the Simulation
+
+- 完全更新物理模拟需要的步骤
+  - `Update game-driven rigid bodies` 更新物理世界中所有游戏驱动刚体的变换，匹配它们在游戏世界中对应的游戏物体或关节的变换
+  - `Update phantoms` 所有幻影的位置在物理步之前更新，以确保碰撞检测执行时幻影在正确位置
+  - `Update forces, apply impulses and adjust constraints` 更新游戏中施加的所有力；应用此帧发生的游戏事件引起的所有脉冲；必要时调整约束，例如，一个可破裂的铰链约束必须检查是否已经被打破，如果是，指示物理引擎移除该约束
+  - `Step the simulation` 碰撞和物理引擎定期更新，见 [The Collision/Physics Step](#{The-Collision/Physics-Step})
+  - `Update physics-driven game objects` 所有物理驱动物体的变换从物理世界提取，对应游戏物体或关节的变换更新以匹配
+  - `Query phantoms` 每个幻影形状的接触在物理步之后读取，用于决策
+  - `Perform collision cast queries` 同步或异步开始射线投射和形状投射，当这些查询的结果可用时，被各种引擎系统用于决策
+- 射线和形状投射理论上可以在游戏循环内的任意时间点完成；在物理步前更新游戏驱动体和应用力与脉冲确保这些效果在模拟中可见；物理驱动物体总是在物理步之后更新确保我们使用的体变换是最新的；渲染通常在游戏循环中其他所有事情做完后进行，确保我们在特定时刻渲染一致的游戏世界视图
+- `Timing Collision Queries` 碰撞查询的时机
+  - `Base decisions on last frame’s state` 基于上一帧碰撞信息查询，许多情况下可以做出正确决定，例如查询玩家上一帧是否站在某物体上，判断他这一帧是否跌落
+  - `Accept a one-frame lag` 在物理步前执行查询，返回前一帧的碰撞信息作为当前帧结束时碰撞状态的近似，容忍查询结果有一帧的滞后，前提通常是物体移动速度不快，这一帧的误差在有些类型的查询中玩家不会注意到，例如一个物体向前移动后查询它是否在玩家视线内
+  - `Run the query after the physics step` 在物理步后执行查询，当基于查询结果的决策可以推迟到帧的后期时是可行的，例如依赖于碰撞查询结果的渲染效果可以这样实现
+- `Single-Threaded Updating` 一个非常简单的单线程游戏循环
+
+  ```C++
+  F32 dt = 1.0f/30.0f;
+
+  for (;;) // main game loop
+  {
+    g_hidManager->poll();
+
+    g_gameObjectManager->preAnimationUpdate(dt);
+    g_animationEngine->updateAnimations(dt);
+    g_gameObjectManager->postAnimationUpdate(dt);
+
+    g_physicsWorld->step(dt);
+    g_animationEngine->updateRagDolls(dt);
+    g_gameObjectManager->postPhysicsUpdate(dt);
+    g_animationEngine->finalize();
+
+    g_effectManager->update(dt);
+
+    g_audioEngine->udate(dt);
+
+    // etc.
+
+    g_renderManager->render();
+
+    dt = calcDeltaTime();
+  }
+  ```
+
+  - 游戏物体在三个阶段中更新：动画执行前；动画系统计算出最终局部姿势和暂定全局姿势后，最终全局姿势和矩阵调色板生成前；物理系统步进后
+  - 所有游戏驱动刚体通常在 `preAnimationUpdate()` 和 `postAnimationUpdate()` 中更新；每个物理驱动体的位置通常在 `postPhysicsUpdate()` 中读取
+  - 步进物理模拟的频率是一个重要问题，大多数数值积分器、碰撞检测算法和约束求解器在步间时间不变时运行最佳。以 1/30 秒或 1/60 秒的理想时间增量步进碰撞/物理 SDK 然后管理整个游戏循环的帧率通常是一个好主意，如果游戏帧率低于目标帧率，最好让物理在视觉上慢下来，而不是尝试调整模拟时间步长匹配实际帧率
+
+### Example Uses of Collision and Physics in a Game
+
+- `Simple Rigid Body Game Objects` 简单的物理模拟物体如武器、可以捡起和投掷的石头、空弹匣、家具、架上可以被射击的物体等，可以使用一个自定义对象然后引用物理世界的一个刚体创建，也可以创建一个附加组件类处理简单刚体碰撞和物理，允许此功能添加到引擎的几乎任意类型的游戏对象中。简单物理对象通常可以运行时动态改变运动类型
+- `Bullet Traces` 激光和抛射武器是许多游戏的重要组成部分。有时射弹由射线投射实现，但是这种方法没有考虑飞行时间和重力影响，如果这些细节对于游戏很重要，可以用随时间推移穿越物理世界的真实刚体建模射弹，最后生还者中的投掷砖块就是这样实现的。实现激光束和射弹需要考虑和处理的几个常见问题如下
+  - `Bullet Ray Casting` 使用射线投射检测子弹命中时有个问题：射线是否来自相机焦点或玩家角色手中的枪尖？这在第三人称射击游戏中尤其成问题。通常必须使用各种技巧如保持合理的视觉效果确保玩家能感觉到他正在射击他瞄准的目标
+  - `Mismatches between Collision and Visible Geometry` 碰撞几何和视觉几何的不匹配会导致有些情况下玩家能击中目标但碰撞查询失败。一个解决方法是使用渲染查询，例如在一个渲染传递期间生成一个纹理，纹理的每个像素保存对应的物体的 ID，然后可以查询纹理判断敌人或其他合适目标是否占据了武器十字线下的像素
+  - `Aiming in a Dynamic Environment` 如果射弹花费有限时间命中目标，则 AI 角色必须“领先”射击
+  - `Impact Effects` 子弹命中目标时我们可能想触发一个音效、一个粒子效果、加一个贴花或其他任务
+    - Unreal 引擎中通过物理材质（`physical materials`）系统实现，视觉几何不仅使用视觉材质标记，还使用物理材质标记，前者定义表面看起来如何，后者定义它如何响应物理交互，包括音效、子弹“爆管”粒子效果、贴花等
+    - 顽皮狗使用一个相似系统：碰撞几何可以用多边形属性（`polygon attributes`）标记，多边形属性定义特定物理行为，如脚步声。但是子弹冲击以特殊方式处理，因为它与视觉几何直接交互，而不是粗略碰撞几何。视觉几何可以用可选的子弹效果（`bullet effect`）标记，子弹效果为可能冲击表面的每个射弹类型定义子弹爆管、音效和贴花
+- `Grenades`
