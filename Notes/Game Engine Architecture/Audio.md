@@ -40,7 +40,7 @@
 - 人类可以感知的声压范围很大，为了管理这样大的动态范围，我们通常以分贝（`decibels / dB`）作为声强的单位。声强以分贝测量时称为声压级（`sound pressure level / SPL`），如下
 
   $$
-  L_p=10\log_{10}(\frac{p_{rms}^2}{p_{ref}^2})dB=20\log_{10}(\frac{p_{rms}}{p_{ref}})dB
+  L_p=10\log_{10}(\frac{p_{rms}^2}{p_{ref}^2})\mathrm{dB}=20\log_{10}(\frac{p_{rms}}{p_{ref}})\mathrm{dB}
   $$
 
   - 常用的空气中的参考声压为 $p_{ref}=20Pa$
@@ -60,7 +60,7 @@
   I(r)\propto\frac{1}{r^2}
   $$
   $$
-  L_p(r)=L_p(0)+10\log_{10}(\frac{1}{4\pi r^2})dB=L_p(0)-10\log_{10}({4\pi r^2})dB
+  L_p(r)=L_p(0)+10\log_{10}(\frac{1}{4\pi r^2})\mathrm{dB}=L_p(0)-10\log_{10}({4\pi r^2})\mathrm{dB}
   $$
 
   - 声源不总是全方位的
@@ -99,7 +99,7 @@
   - `Atmospheric absorption` 导致声音远离听者时高频部分消失
   - `Having two ears` 耳间时差（`interaural time difference`）与耳间强度差（`interaural intensity difference`），右边的声音右耳听起来比左耳响度大，右耳比左耳早听到，左耳听到略微低沉
   - `Ear shape` 耳朵杯状朝前，来自后面的声音听起来比前面的声音略微低沉
-  - `The head-related transfer function` 耳朵褶皱对来自不同方向的声音的微小影响的一个数学模型
+  - `The head-related transfer function (HRTF)` 耳朵褶皱对来自不同方向的声音的微小影响的一个数学模型
 
 ## The Mathematics of Sound
 
@@ -273,3 +273,58 @@
   - 大多数真实世界的滤波器的频率响应在通带和阻带间逐渐下降，这有助于在所需频率与不需要的频率间没有单一明确的线的情况下进行滤波
 
 ## The Technology of Sound
+
+### Analog Audio Technology
+
+- 最早的音频硬件基于模拟电子设备
+- `Microphones` 麦克风，将音频压缩波转化为电子信号的传感器，动圈麦克风（`dynamic microphone`）使用电磁感应，电容式麦克风（`condenser microphone`）利用电容的变换，其他类型的麦克风使用压电发生或光调制来产生电压信号
+  - 不同麦克风有不同敏感度模式，称为极性模式（`polar patterns`），描述麦克风对围绕其中心轴的各个角度声音的敏感程度，全向麦克风（`omnidirectional mic`）在各个方向上敏感度相等，双向麦克风（`bidirectional mic`）有两个敏感度“波瓣”，形状为阿拉伯数字 8，心形麦克风（`cardioid mic`）有一个单向敏感度分布，形状类似心形
+- `Speakers` 扬声器，将变化的输入电压信号转化为薄膜振动的传感器，薄膜振动会产生气压变化从而产生声压
+- `Speaker Layouts: Stereo` 声音系统通常支持多个扬声器输出声道，一般至少有两个扬声器来支持左和右立体声声道；一些高保真立体声系统还拥有两个额外的高频扬声器（`tweeters`，能重现左右声道中最高频率声音的微型扬声器），允许两个主扬声器更大，因此更好地覆盖低音；一些立体声系统还支持低音炮或 LFE （`(low-frequency effects`）扬声器，这样的系统有时称为 2.1 系统，2 代表左和右，.1 代表 LFE 扬声器
+  - `Headphones Versus Speakers` 房间中的立体声扬声器通常在听者前方向任一侧偏移，每个耳朵会同时接受来自左和右扬声器的声波，来自远处扬声器的相移声波往往会干涉来自近处扬声器的声波；耳机与耳朵直接接触，不会发生干涉，且由于耳机几乎直接将声音传递到耳道，耳朵形状的 HRTF 无法发挥作用，听者受到的空间信息较少
+- `Speaker Layouts: Surround Sound` 家庭影院环绕音系统通常有两种风格：5.1 和 7.1。.1 指低音炮，5.1 系统的 5 个主扬声器为中、前左、前右、后左、后右，7.1 比 5.1 多了环绕左侧和环绕右侧两个主扬声器，杜比数字 AC-3（`Dolby Digital AC-3`）和 `DTS` 是两个流行的环绕音技术
+- `Analog Signal Levels` 音频电压信号可以以各种电压电平发送。麦克风通常产生低振幅的电压信号，称为麦克风电平（`mic-level`）信号。对于组件之间的连接，使用更高电压的线路电平（`line-level`）信号。专业音频设备的线路电平与消费电子产品存在很大差异，连接音频设备时匹配输入和输出信号的电平十分重要，传入过高电压导致信号削波，传入过低电压导致音频听起来比它应该的更安静
+- `Amplifiers` 放大器，模拟电子电路，在输出端产生几乎完全复制的输入信号，但信号的振幅显著增加。麦克风产生的电压很小，必须通过放大器来驱动扬声器产生可听见的声波。放大器系统的增益 $A$ 定义为输出功率与输入功率之比，单位通常为分贝
+
+  $$
+  A=10\log_{10}(\frac{P_{out}}{P_{in}})\mathrm{dB}
+  $$
+
+- `Volume/Gain Controls` 音量 / 增益控制，基本上是反向放大器，也称为衰减器（`attenuator`）
+
+  $$
+  A=10\log_{10}(\frac{P_{volume}}{P_{max}})\mathrm{dB},\ P_{volume}\lt P_{max}
+  $$
+
+- `Analog Wiring and Connectors` 模拟单声道音频电压信号可以由一对导线承载，立体声信号则需要三根导线，接线可以在设备内部，称为总线（`bus`），也可以在外部，用于连接不同设备。外部连接通常有直接的“夹子”，高端扬声器使用的螺柱连接器，或各种标准化连接器，如大多数耳机和 PC 声卡使用的 TRS mini-jack
+
+### Digital Audio Technology
+
+- CD 的引入标志着音频行业向数字音频存储和处理的转折点。模拟和数字音频技术的分别完全对应信号处理原理中连续时间和离散时间信号的分别
+- `Analog-to-Digital Conversion: Pulse-Code Modulation` 脉冲编码调制，编码采样的模拟声音信号让它可以保存到电脑内存，通过数字电话网络传输或刻录到光盘的标准方法。电压测量以规则的时间间隔进行并以浮点数形式保存或量化后以固定位数的整数形式保存。测量模拟电压并转化为量化数字形式的处理称为模数转换（`analog-to-digital conversion` / `A/D conversion`），以规则的时间间隔重复此过程称为采样（`sampling.`），执行 A/D 转换或采样的硬件或软件组件称为 A/D 转换器或 ADC
+  - 数学方面，给定连续时间音频信号 $p(t)$，可以构造采样版本的 $p[n]$，对于每个采样，$p[n]=p(nT_s)$，其中 $n$ 为用于采样索引的非负整数，$T_s$ 是每个采样的时间间隔，称为采样周期
+  - PCM 采样的数字信号有两个重要属性
+    - `Sampling rate` 采样率，采样的频率，根据香农-奈奎斯特采样定理，由于人类可以听到的声音是带限（`and-limited`，20 Hz - 20 kHz）的，所以可以使用略高于 40 kHz 的采样率忠实采样所有音频信号
+    - `Bit depth` 位深，有时也称为分辨率（`resolution`），描述用于表示每个量化电压测量的数字位数。量化误差（`Quantization error`）是将测量电压值四舍五入到最近量化值引入的误差，相同情况下更大的位深导致更小的量化误差，产生更高质量的记录。未压缩音频数据格式中位深通常为 16
+- `Digital-to-Analog Conversion: Demodulation` 解调，需要与模数转换相反的过程，称为数模转换（`digitalto-analog conversion` / `D/A conversion`），数模转换电路称为 DAC。用离散电压电平序列驱动模拟电压电路时通常会引入不必要的高频振荡，可以使用低通或带通滤波器消除这些不必要的振荡
+- `Digital Audio Formats and Codecs` 数字音频格式和编解码器，一些音频格式用未压缩形式保持 PCM 数据；其他的使用各种数据压缩形式降低文件大小或传输带宽，一些压缩方案是有损的（`lossy`），其他压缩方式是无损的（`lossless`）
+  - `Raw header-less PCM data` 原始无头 PCM 数据，有时用于信号的元信息如采样率和位深已知的情况
+  - `Linear PCM (LPCM)` 线性 PCM，未压缩音频格式，振幅测量使用线性标度而不是对数标度
+  - `WAV` 微软和 IBM 创建的未压缩文件格式，常见于微软操作系统，是资源交换文件格式（`resource interchange file format / RIFF`，TIFF 文件由块组成，每个块由四字符码定义块内容和大小）家族的一员，文件中的比特流符合 LPCM 格式。WAV 文件可以包含压缩音频，但最常用于保存未压缩音频数据
+  - `WMA (Windows Media Audio)` 微软设计的专有音频压缩技术，可替代 MP3
+  - `AIFF (audio interchange file format)` 音频交换文件格式，苹果开发的格式，与 WAV/RIFF 文件相似，AIFF 文件通常包含未压缩 PCM 数据，由块组成。AIFF-C 是 AIFF 的压缩变体
+  - `MP3` 有损压缩音频文件格式，已成为大多数数字音频播放器事实上的标准。利用感知编码（`perceptual coding`），MP3 压缩可以使文件只有十分之一大小，但与原始未压缩音频的感知差异很小
+  - `ATRAC (Adaptive Transform Acoustic Coding)` 自适应变换声学编码，索尼开发的专有音频压缩技术家族
+  - `Ogg Vorbis` 提供有损压缩的开源文件格式，Ogg 指的是通常与 Vorbis 数据格式结合使用的“容器”格式
+  - `Dolby Digital (AC-3)` 有损压缩格式，支持从单声道到 5.1 环绕声的声道格式
+  - `DTS` DTS 开发的一系列影院音频技术
+  - `VAG` PS3 开发者可使用的专有音频文件格式，利用了自适应差分 PCM（`adaptive differential PCM (ADPCM)`）。差分 PCM（`Differential PCM (DPCM)`）保存采样间的增量而不是采样的绝对值以允许信号更高效的压缩，自适应差分 PCM 动态改变采样率以进一步提高可实现的压缩比
+  - `MPEG-4 SLS, MPEG-4 ALS and MPEG-4 DST` 提供无损压缩的格式
+- `Parallel and Interleaved Audio Data` 并行和交错音频数据，多声道音频数据可以使用单独的缓冲区保存每个单声道的采样，或将这些数据按预定义顺序交错保存在单个缓冲区中
+- `Digital Wiring and Connectors` 数字接线和连接器
+  - `S/PDIF (Sony/Philips Digital Interconnect Format)` 索尼 / 飞利浦数字互连格式，以数字方式传输音频信号的互连技术。S/PDIF 标准物理上通过同轴电缆连接（也称为 S/PDIF）或光纤连接（称为 `TOSLINK`）实现，S/PDIF 传输协议仅限于 LPCM 未压缩音频，相同的物理接口还可用于比特流编码音频如杜比数字或 DTS 有损压缩数据
+  - `HDMI (high-definition multimedia interface)` 高清多媒体接口，未压缩多声道 LPCM 在消费类音频设备上只能通过 HDMI 连接发送，HDMI 连接器用于传输未压缩数字视频和压缩或未压缩数字音频信号
+  - `USB connections` 有时用 USB 连接发送音频信号，大多数游戏主机上 USB 输出仅用于驱动耳机
+  - `Wireless audio connections` 无限音频连接，蓝牙标准是最常用的音频信号无线传输方法
+
+## Rendering Audio in 3D
