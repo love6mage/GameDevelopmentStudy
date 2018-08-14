@@ -1,5 +1,45 @@
 # Audio
 
+<!-- TOC -->
+
+- [Audio](#audio)
+  - [The Physics of Sound](#the-physics-of-sound)
+    - [Properties of Sound Waves](#properties-of-sound-waves)
+    - [Perceived Loudness and the Decibel](#perceived-loudness-and-the-decibel)
+    - [Sound Wave Propagation](#sound-wave-propagation)
+  - [The Mathematics of Sound](#the-mathematics-of-sound)
+    - [Signals](#signals)
+    - [Manipulating Signals](#manipulating-signals)
+    - [Linear Time-Invariant (LTI) Systems](#linear-time-invariant-lti-systems)
+    - [Impulse Response of an LTI System](#impulse-response-of-an-lti-system)
+    - [The Frequency Domain and the Fourier Transform](#the-frequency-domain-and-the-fourier-transform)
+  - [The Technology of Sound](#the-technology-of-sound)
+    - [Analog Audio Technology](#analog-audio-technology)
+    - [Digital Audio Technology](#digital-audio-technology)
+  - [Rendering Audio in 3D](#rendering-audio-in-3d)
+    - [Overview of 3D Sound Rendering](#overview-of-3d-sound-rendering)
+    - [Modeling the Audio World](#modeling-the-audio-world)
+    - [Distance-Based Attenuation](#distance-based-attenuation)
+    - [Pan](#pan)
+    - [Propagation, Reverb and Acoustics](#propagation-reverb-and-acoustics)
+    - [Doppler Shift](#doppler-shift)
+  - [Audio Engine Architecture](#audio-engine-architecture)
+    - [The Audio Processing Pipeline](#the-audio-processing-pipeline)
+    - [Concepts and Terminology](#concepts-and-terminology)
+    - [The Voice Bus](#the-voice-bus)
+    - [Master Mixer](#master-mixer)
+    - [The Master Output Bus](#the-master-output-bus)
+    - [Implementing a Bus](#implementing-a-bus)
+    - [Asset Management](#asset-management)
+    - [Mixing Your Game](#mixing-your-game)
+    - [Audio Engine Survey](#audio-engine-survey)
+  - [Game-Specific Audio Features](#game-specific-audio-features)
+    - [Supporting Split-Screen](#supporting-split-screen)
+    - [Character Dialog](#character-dialog)
+    - [Music](#music)
+
+<!-- /TOC -->
+
 ## The Physics of Sound
 
 - 声音是在空气中传播的压缩波，声波振幅（`amplitude`）的单位为压强（`pressure`），SI 单位中压强的单位为帕斯卡（`Pascals / Pa`），$1Pa=1N/m^2=1kg/(m\cdot s^2)$
@@ -577,3 +617,61 @@
   - `UnrealEngine` Unreal 引擎提供自己的 3D 音频引擎和强大的集成工具链
 
 ## Game-Specific Audio Features
+
+- 在 3D 音频渲染流水线之上，游戏通常实现各种特定于游戏的功能和系统
+  - `Split-screen support` 分屏支持。支持分屏播放的多人游戏必须提供机制，允许 3D 游戏世界中的多个听者共享玩家房间中的一组扬声器
+  - `Physics-driven audio` 物理驱动音频。支持动态物理模拟物体（如废墟、可破坏物、布娃娃）的游戏需要一种方式播放冲击、滑动、滚动和破碎等对应的合适音频
+  - `Dynamic music system` 动态音乐系统。许多故事驱动的游戏需要音乐实时适应游戏中事件的气氛和张力
+  - `Character dialog system` 角色对话系统。AI 驱动的角色在它们跟彼此或玩家角色说话时看起来更真实
+  - `Sound synthesis` 声音合成。一些引擎继续支持通过以各种音量和频率结合各种波形来从头开始合成声音
+    - `Musical instrument synthesizers` 乐器合成器。在不使用预先录制音频的情况下，再现模拟乐器的自然声音
+    - `Physically based sound synthesis` 基于物理的声音合成。包含广泛的技术，它们尝试精确再现物体与虚拟环境物理交互产生的声音，这样的系统利用来自现代物理模拟引擎的可用的接触、动量、力、扭矩和变形信息，以及物体材质的属性和几何形状，来合成冲击、滑动、滚动、弯曲等的合适声音
+    - `Vehicle engine synthesizers` 车辆引擎合成器。旨在给定输入，如虚拟引擎的加速度、RPM 和负载，车辆的机械运动，重现车辆发出的声音（顽皮狗神秘海域游戏中的车辆追逐序列使用了各种形式的动态引擎建模，但这些系统技术上不是合成器，因为它们通过各种预先录制声音间的交叉渐变产生输出）
+    - `Articulatory speech synthesizers` 发音语音合成器。通过人类声带的 3D 模型从头开始产生人类语言
+  - `Crowd Modeling` 人群建模。以人群为特色的游戏需要渲染人群声音的一些方式。通常建模人群为多层声音，包括一个背景氛围加个人发声
+
+### Supporting Split-Screen
+
+- 支持分屏多人十分棘手，因为虚拟游戏世界中有多个听者，且必须共享玩家房间中的一组扬声器。简单将所有声音平移多次，每个听者一次，结果不总是合理的
+- 不存在完美的解决方案：例如玩家 A 站在爆炸旁边而 B 站在远处，B 仍然能清晰大声地听到爆炸声。一个游戏能做到的最好的方法是拼凑一个混合解决方案，一些声音以物理正确的方式处理而其他的声音被“捏造”
+
+### Character Dialog
+
+- `Giving a Character a Voice` 在角色需要说话时简单播放合适的预先录制声音足够给游戏角色一个语音，但游戏引擎中的对话系统通常非常复杂
+  - 需要编目每个角色可能被要求说出的所有可能的对话行，给每个对话行提供 ID
+  - 游戏中每个唯一可识别的角色需要以可识别和一致的声音说话
+  - 通常需要由各种配音演员录制相同对话行多次
+  - 大多数对话系统提供在一组可能性中随机选择特定对话行的方式，让对话多种多样
+  - 对话音频往往持续时间长且只播放一次，所以通常按需流式传输
+  - 也可以利用对话系统产生效果声音
+- `Defining a Line of Dialog` 大多数对话系统在说话请求和要播放的特定音频片段的选择间引入一定程度的间接，游戏程序员或设计师请求对话的逻辑行，以字符串或哈希字符串 ID 这样的 ID 表示，然后声音设计师给每个逻辑行填充一个或多个音频片段，提供所需的声音质量变化或内容变化
+  - 通常最好将对话行按角色分成单独的文件，便于声音设计师工作，有助于更高效管理内存
+- `Playing a Line of Dialog` 给定对话行定义数据，对话系统可以简单将逻辑行请求转换为特定音频片段：在表中查询角色的特定语音 ID，然后在各种可能行间做一个随机选择
+  - 通常使用某种机制确保对话行不会经常重复，一个简单方法是遍历数组，遍历完成后打乱数组重新遍历
+  - 最好提供简单的、即发即弃的对话行请求接口
+- `Priority and Interruption` 可以给每个对话行分配一个优先级，当收到说出对话行的请求时，系统查询当前播放行和它们的优先级来确定是否播放新行，必要时中断当前播放行。中断对话的实现一般为简单停止当前行并立即播放新行，也可以在中间加入某种声门停止声音
+- `Conversations` 角色需要能说出相当长的一链对话行，以及两个或更多角色间来回的玩笑。最后生还者中的会话由逻辑段组成，每个段对应一个逻辑行，由表示它们的 ID 链接成会话
+- `Interrupting Conversations` 优先级也可应用于会话。最后生还者中会话作为第一类实体实现，每个会话有一个优先级
+- `Exclusivity` 任何对话行或会话可以标记为非独占（`non-exclusive`）、派独占（`faction-exclusive`）或全局独占（`globally exclusive`），控制对话行或会话的中断如何运作
+  - 非独占行或会话不会中断其他任何行或会话
+  - 派独占行或会话会中断角色派系内所有其它行或会话
+  - 全局独占行或会话会中断所有其它行或会话
+- `Choices and Branching Conversations` 通常允许会话根据玩家行为、AI 选择或游戏世界状态的其它方面以不同方式播放。顽皮狗实现了这样的系统，受到了 Valve 开发的早期系统的部分启发。在顽皮狗的会话系统中，会话的每个段可以包含一个或多个可选的对话行，每个可选对话行可以携带一个选择规则，这个规则评估为真时行被选定，否则被忽略；每个规则包含一个或多个标准，每个标准都是一个布尔表达水，如 (`'health > 5`) 和 (`'player-death-count == 1`)，这些表达式都为真时规则才评估为真。将会话分为包含一个或多个可选行的段开辟了制作分支会话的可能性
+  - `Speaker and Listener` 说话者和听者的抽象使会话定义更灵活，顽皮狗支持多达三个听者，尽管绝大多数会话只在两个角色之间
+  - `Fact Dictionaries` 规则的标准中引用的量如 `'health` 和 `'player-death-count` 通过包含键值对的字典数据结构实现，字典中的值有一个关联的数据类型。每个角色有自己的事实字典，包含角色自己的信息，如健康、武器类型、意识级别等；每个派系也有自己的事实字典，表示派系作为一个整体的信息，如派系中还剩下多少角色；还存在一个单例全局事实字典，包含游戏作为一个整体的信息，如游戏时间、当前关卡名称、任务重试次数等
+  - `Criterion Syntax` 写标准时，可以定义从任一字典获取信息，如 (`('self 'health) > 5`) 从角色自己的事实字典获取，(`('global 'seconds-playing) <= 23.5`) 从全局事实字典获取。如果不显式定义字典，则先在角色自己的事实字典查找，然后在角色所在派系的事实字典查找，最后在全局事实字典查找
+- `Context-Sensitive Dialog` 最后生还者中敌方角色可以聪明地说出角色位置，这通过用区域标记游戏世界实现。每个区域用两种位置标签之一标记，一个特定标签为非常具体的位置如柜台后面、树旁边，一个通用标签为更一般的位置，如商店里、街上。敌方 NPC 与玩家在同一通用区域内，用特定标签选择对话行；不在同一通用区域，用通用标签选择对话行
+- `Dialog Actions` 没有肢体语言的对话通常看起来怪异不真实，最后生还者中使用加性动画实现了一个手势系统，手势可以用 C++ 代码或脚本显示调用，每个对话行有一个关联的脚本，其时间轴与音频同步，允许在关键对话行中的精确时刻触发手势
+
+### Music
+
+- 游戏引擎的音乐系统通常有以下职责
+  - 作为流式音频片段播放音乐曲目
+  - 提供音乐变化
+  - 匹配音乐与游戏中发生的事件
+  - 一段音频到下一段的无缝过渡
+  - 以合适愉快的方式混合声音
+  - 允许音乐暂时躲避，增强特定音乐或会话的可听性
+  - 允许称为 `stingers` 的简短的音乐或声音效果暂时中断当前播放的音乐曲目（或音乐曲目暂时躲避）
+  - 允许音乐暂停和重现开始
+- 可以创建多个播放列表，每个列表对应一个不同的气氛和张力级别。一些游戏实现一个张力级别不断增加的音乐选择的栈
