@@ -299,3 +299,28 @@
   - `Finding all objects within a given region or radius` 可以将游戏对象保存到某种类型的空间哈希数据结构，例如放置在整个游戏世界中的横向网格，或更复杂的四叉树、八叉树、kd 树等
 
 ### Updating Game Objects in Real Time
+
+- 大多数底层引擎子系统需要周期性更新，游戏对象系统也如此，几乎所有的游戏引擎将更新游戏对象状态作为主游戏循环的一部分
+- 因为游戏是动态的基于时间的模拟，所以一个游戏对象的状态描述它在特定时刻的配置
+- 通常游戏引擎维护多个时钟，一个完全跟踪真实时间，其它的可能对应也可能不对应真实时间。时钟提供绝对时间 $t$ 或游戏循环迭代间的时间变化 $\Delta t$。驱动游戏对象状态更新的时钟通常允许与真实时间不同，允许游戏对象行为暂停、放慢、加速或甚至反转，对游戏调试和开发也非常宝贵
+- 游戏对象更新系统是计算机科学中动态、实时、基于代理的电脑模拟（`dynamic, real-time, agent-based computer simulation`）的一个例子，还展示了离散事件模拟（`discrete event simulations`）的一些方面
+- 与所有高层游戏引擎系统一样，每个引擎使用略微或有时完全不同的方法
+
+#### A Simple Approach (That Doesn’t Work)
+
+- 更新一组游戏对象的状态的最简单方法是迭代对象集合并依次调用每个对象的类似 `Update()` 的虚函数，这在主游戏循环的每个迭代期间通常执行一次，即每帧一次。前一帧开始的时间增量可以传递给更新函数
+- `Maintaining a Collection of Active Game Objects` 激活游戏对象通常由单例管理类维护，使用一个链表保存游戏对象的指针、智能指针或句柄。不允许游戏对象动态创建和销毁的引擎中通常使用静态大小的数组而不是链表
+- `Responsibilities of the Update() Function` 游戏对象的 `Update()` 方法主要负责给定游戏对象的前一个状态 $S_i(t-\Delta t)$ 判断它在当前离散时间索引的状态 $S_i(t)$。完成这个可能包含应用一个刚体动态模拟给对象、采样预先制作的动画、对当前时间步中发生的事件做出反应等
+  - 大多数游戏对象与多个引擎子系统交互，直接在游戏对象的更新函数中简单更新这些子系统的状态似乎是合理和直观的，但在商业级游戏引擎中通常不可行
+
+#### Performance Constraints and Batched Updates
+
+- 大多数底层引擎系统有严格的性能限制，它们操作大量数据，每帧要尽可能快地执行大量运算，因此大多数引擎系统受益于批量更新（`batched updating`）
+- 大多数商业游戏引擎中，每个引擎子系统由主游戏循环直接或间接更新，而不是基每个游戏对象更新。使用批量更新的原因不仅是性能优势，一些引擎子系统当基于每对象更新时根本无法运作，例如碰撞系统
+- 批量更新提供许多性能优势，例如
+  - `Maximal cache coherency` 允许引擎子系统实现最大缓存一致性，因为它的每对象数据在内部维护，可以安排在 RAM 的单个连续区域中
+  - `Minimal duplication of computations` 全局计算可以执行一次并重用于多个游戏对象
+  - `Reduced reallocation of resources` 资源可以每帧分配一次并重用于批处理中的所有对象
+  - `Efficient pipelining` 高效的流水线，利用专门的硬件资源
+
+#### Object and Subsystem Interdependencies
