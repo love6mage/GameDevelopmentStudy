@@ -1,6 +1,6 @@
-# Graphics
+# The Rendering Engine
 
-- [Graphics](#graphics)
+- [The Rendering Engine](#the-rendering-engine)
   - [Depth-Buffered Triangle Rasterization](#depth-buffered-triangle-rasterization)
     - [Describing a Scene](#describing-a-scene)
     - [Describing the Visual Properties of a Surface](#describing-the-visual-properties-of-a-surface)
