@@ -1,5 +1,66 @@
 # Gameplay
 
+<!-- TOC -->
+
+- [Gameplay](#gameplay)
+  - [Introduction to Gameplay Systems](#introduction-to-gameplay-systems)
+    - [Anatomy of a Game World](#anatomy-of-a-game-world)
+      - [World Elements](#world-elements)
+      - [World Chunks](#world-chunks)
+      - [High-Level Game Flow](#high-level-game-flow)
+    - [Implementing Dynamic Elements: Game Objects](#implementing-dynamic-elements-game-objects)
+      - [Game Object Models](#game-object-models)
+      - [Tool-Side Design versus Runtime Design](#tool-side-design-versus-runtime-design)
+    - [Data-Driven Game Engines](#data-driven-game-engines)
+    - [The Game World Editor](#the-game-world-editor)
+      - [Typical Features of a Game World Editor](#typical-features-of-a-game-world-editor)
+      - [Integrated Asset Management Tools](#integrated-asset-management-tools)
+  - [Runtime Gameplay Foundation Systems](#runtime-gameplay-foundation-systems)
+    - [Components of the Gameplay Foundation System](#components-of-the-gameplay-foundation-system)
+    - [Runtime Object Model Architectures](#runtime-object-model-architectures)
+      - [Object-Centric Architectures](#object-centric-architectures)
+      - [Property-Centric Architectures](#property-centric-architectures)
+    - [World Chunk Data Formats](#world-chunk-data-formats)
+      - [Binary Object Images](#binary-object-images)
+      - [Serialized Game Object Descriptions](#serialized-game-object-descriptions)
+      - [Spawners and Type Schemas](#spawners-and-type-schemas)
+    - [Loading and Streaming Game Worlds](#loading-and-streaming-game-worlds)
+      - [Simple Level Loading](#simple-level-loading)
+      - [Toward Seamless Loading: Air Locks](#toward-seamless-loading-air-locks)
+      - [Game World Streaming](#game-world-streaming)
+      - [Memory Management for Object Spawning](#memory-management-for-object-spawning)
+      - [Saved Games](#saved-games)
+    - [Object References and World Queries](#object-references-and-world-queries)
+      - [Pointers](#pointers)
+      - [Game Object Queries](#game-object-queries)
+    - [Updating Game Objects in Real Time](#updating-game-objects-in-real-time)
+      - [A Simple Approach (That Doesn’t Work)](#a-simple-approach-that-doesnt-work)
+      - [Performance Constraints and Batched Updates](#performance-constraints-and-batched-updates)
+      - [Object and Subsystem Interdependencies](#object-and-subsystem-interdependencies)
+      - [Designing for Parallelism](#designing-for-parallelism)
+    - [Events and Message-Passing](#events-and-message-passing)
+      - [The Problem with Statically Typed Function Binding](#the-problem-with-statically-typed-function-binding)
+      - [Encapsulating an Event in an Object](#encapsulating-an-event-in-an-object)
+      - [Event Types](#event-types)
+      - [Event Arguments](#event-arguments)
+      - [Event Handlers](#event-handlers)
+      - [Unpacking an Event’s Arguments](#unpacking-an-events-arguments)
+      - [Chains of Responsibility](#chains-of-responsibility)
+      - [Registering Interest in Events](#registering-interest-in-events)
+      - [To Queue or Not to Queue](#to-queue-or-not-to-queue)
+      - [Some Problems with Immediate Event Sending](#some-problems-with-immediate-event-sending)
+      - [Data-Driven Event/Message-Passing Systems](#data-driven-eventmessage-passing-systems)
+    - [Scripting](#scripting)
+      - [Runtime versus Data Definition](#runtime-versus-data-definition)
+      - [Programming Language Characteristics](#programming-language-characteristics)
+      - [Some Common Game Scripting Languages](#some-common-game-scripting-languages)
+      - [Architectures for Scripting](#architectures-for-scripting)
+      - [Features of a Runtime Game Scripting Language](#features-of-a-runtime-game-scripting-language)
+    - [Control High-Level Game Flow](#control-high-level-game-flow)
+  - [More](#more)
+
+<!-- /TOC -->
+
 ## Introduction to Gameplay Systems
 
 - 游戏玩法可以定义为玩游戏的整体体验。游戏机制（`game mechanics`）是游戏玩法更具体的说法，通常定义为一组管理游戏中各种实体间交互的规则，还定义玩家目标、胜利或失败标准、玩家角色能力、非玩家实体的数量和类型、游戏体验的整体流程等
@@ -65,7 +126,7 @@
 
 #### Typical Features of a Game World Editor
 
-- `World Chunk Creation and Management` 世界创建的单元通常是块，游戏世界编辑器通常允许创建新块，重命名、分割、合并或销毁已有块
+- `World Chunk Creation and Management` 世界创建的单位通常是块，游戏世界编辑器通常允许创建新块，重命名、分割、合并或销毁已有块
   - 每个块可以链接到一个或多个静态网格或其他静态数据元素如 AI 导航地图、玩家可以抓取的壁架的描述、掩护点定义等
   - 一些引擎中，块由单个背景网格定义，没有一个就无法存在；其他引擎中，块可以单独存在，可能由包围体定义，且可以用零个或多个网格或画笔几何填充
   - 一些世界编辑器提供专门的工具创作地形、水和其他特殊静态元素；其他引擎中，这些元素可以使用标准 DCC 应用程序创作，但以某种方式标记指示资产调节流水线或运行时引擎它是特殊的，例如神秘海域和最后生还者中水创作为三角网格，但用一个特殊材质映射指示它被视为水
@@ -249,7 +310,7 @@
   - 在玩家做常规游戏任务的同时加载数据
   - 管理内存，消除内存碎片，同时根据需要加载和卸载数据
 - 粗粒度的方法：将内存分为多个大小相等的缓冲，每个缓冲保留一个世界块，玩家离开一个世界块足够远，无法再看到它时可以将它卸载并加载新的世界块。这要求所有的世界块大小大致相同，足够填充缓冲且不大于缓冲
-- 细粒度的方法：将每个游戏资产，从世界块到前景网格到纹理到动画银行，分为大小相等的数据块，而不是流式传输相对大的世界块。然后使用一个基于池的大块内存分配系统根据需要加载和卸载资源数据，不用担心内存碎片。顽皮狗的神秘海域和最后生还者引擎使用了这个技术，并且还使用了一些复杂的技术来利用不完整块末端未使用的空间
+- 细粒度的方法：将每个游戏资产，从世界块到前景网格到纹理到动画库，分为大小相等的数据块，而不是流式传输相对大的世界块。然后使用一个基于池的大块内存分配系统根据需要加载和卸载资源数据，不用担心内存碎片。顽皮狗的神秘海域和最后生还者引擎使用了这个技术，并且还使用了一些复杂的技术来利用不完整块末端未使用的空间
 - `Determining Which Resources to Load` 使用细粒度的大块内存分配器的一个问题是引擎如何知道游戏给定时刻要加载哪些资源，神秘海域和最后生还者中使用一个相对简单的关卡加载区域（`level load regions`）系统控制资产的加载和卸载。每个关卡加载区域包括一个地理块，包含当玩家在该区域内时应该在内存中的世界块的一个列表
 
   ![LevelLoadRegions](Images/LevelLoadRegions.PNG)
@@ -422,6 +483,129 @@
   - 提供一个简单的脚本语言，顽皮狗是这样做的
   - 前面两个方法是两个极端，前者严重限制了设计师能够独立做什么，后者要求设计师有较强的编程能力。一些引擎瞄准了中间地带，使用复杂的图形用户界面提供很大的灵活性，例如 Unreal 的 Kismet
 - `Data Pathway Communication Systems` 数据通路通信系统，像 Kismet 这样的基于 GUI 的事件系统的本质。程序员决定每个游戏对象类型有哪种类型的输入输出端口，设计师使用 GUI 可以将这些端口以任意方式连接成图，构造游戏中的任意行为。程序员还可以提供图中使用的各种类型的节点，例如反转输入的、产生正弦波的或按秒输出当前游戏时间的节点
-- `Some Pros and Cons of GUI-Based Programming` 相较于基于文本文件的脚本语言，图形用户界面易于使用、有渐进的学习曲线、有工具提示指导用户、有大量的错误检查，但是开发、调试和维护成本高，额外的复杂度可能会导致恼人的或者计划解决的问题，并且实际上有时会限制设计师可以用工具做什么。基于文本文件的脚本语言更简单、很容易在源码中查找和替换、用户可以自由选择舒服的文本编辑器
+- `Some Pros and Cons of GUI-Based Programming` 相较于基于文本文件的脚本语言，图形用户界面易于使用、有渐进的学习曲线、有工具提示指导用户、有大量的错误检查，但是开发、调试和维护成本高、额外的复杂度可能会导致恼人的或者计划解决的问题、实际上有时会限制设计师可以用工具做什么。基于文本文件的脚本语言更简单、很容易在源码中查找和替换、用户可以自由选择舒服的文本编辑器
 
 ### Scripting
+
+- 一个脚本语言（`scripting language`）可以定义为一个编程语言，其主要目的是允许用户控制和定制软件应用的行为，例如 Visual Basic 可用于定制 Microsoft Excel 的行为，MEL 和 Python 可用于定制 Maya 的行为。在游戏引擎的背景下，一个脚本语言是一个高级、相对易于使用的编程语言，为用户提供对大多数常用引擎功能的方便访问，程序员和非程序员都可以使用它开发新游戏或定制现有游戏
+
+#### Runtime versus Data Definition
+
+- 游戏脚本语言通常有两种风格
+  - `Data-definition languages` 数据定义语言，主要目的是允许用户创建和填充之后由引擎消耗的数据结构，这样的语言通常是声明性的（`declarative`），可以离线或在运行时数据加载到内存中时执行或解析
+  - `Runtime scripting language` 运行时脚本语言，旨在运行时在引擎上下文中执行，这样的语言通常用于扩展或定制引擎游戏对象模型或其它引擎系统的硬编码功能
+
+#### Programming Language Characteristics
+
+- 编程语言可以根据相对较少的标准大致分类
+  - `Interpreted versus compiled languages` 编译语言的源码由编译器程序转换为机器码，直接由 CPU 执行；解释语言的源码直接运行时解析或者预先编译为平台无关的字节码（`byte code`），运行时由虚拟机执行（`virtual machine / VM`）。虚拟机可以很容易移植到任何硬件平台，嵌入到游戏引擎这样的主机应用程序中，这个灵活性的最大代价是牺牲了执行速度
+  - `Imperative languages` 在命令式语言中，程序由指令序列描述，每个指令执行一个操作或改变内存中数据的状态，C 和 C++ 是命令式语言
+  - `Declarative languages` 声明性语言描述要完成的内容但没有详细说明应该如何获得结果，该决定取决于执行该语言的人。Prolog 是一个例子，HTML 和 TeX 这样的标记语言也可以分类为声明性语言
+  - `Functional languages` 函数式语言，技术上是声明性语言的一个子集，旨在完全避免状态。程序由一组函数定义，每个函数没有副作用地产生结果，即不导致可被观察到的系统变更，程序通过从一个函数到下一个函数传递输入数据直到生成最终所需结果来构建。这些语言非常适合实现数据处理流水线，且实现多线程应用程序时提供明显的优势，例如 OCaml、Haskell 和 F#
+  - `Procedural versus object-oriented languages` 过程语言中，程序的主要原子是过程或函数，这些过程和函数执行操作、计算结果、改变内存中各种数据结构的状态；面向对象语言中，程序构造的主要单位是类
+  - `Reflective languages` 反射语言中，系统中数据类型、数据成员分布、函数和类层级关系信息可在运行时检查，而非反射语言中，这个元信息的大部分只在编译阶段知道，非常有限的一部分暴露于运行时代码。C# 是反射语言的一个例子，C 和 C++ 是非反射语言的例子
+- `Typical Characteristics of Game Scripting Languages` 将游戏脚本语言与其本地编程语言区分开来的特征
+  - `Interpreted` 大多数游戏脚本语言由虚拟机解释，而不是编译。这种选择是为了灵活性、可移植性和快速迭代。脚本语言可以像其它资产一样加载到内存而不需要操作系统的帮助（例如必要的 PC 平台的 DLL，PS3 的 PRX），虚拟机可以灵活选择何时和如何执行脚本代码
+  - `Lightweight` 大多数脚本语言设计用于嵌入式系统，因此它们的虚拟机往往很简单，内存足迹往往很小
+  - `Support for rapid iteration` 支持快速迭代，脚本代码修改后其影响通常可以非常快看到。一些引擎允许脚本代码运行时直接重新加载，另一些需要游戏关闭并重新运行，不管哪种方式，做修改和游戏中看到影响间的时间通常都比修改本地语言源代码小得多
+  - `Convenience and ease of use` 脚本语言通常根据特定游戏需求进行定制，可以提供让常见任务简单、直观和不易于出错的功能。例如，脚本语言可以为以下功能提供函数或自定义语法：按名称查找游戏对象；发送和处理事件；暂停或操纵时间流逝；等待指定时间过去；实现有限状态机；将可调整参数暴露给世界编辑器；甚至为多玩家游戏处理网络复制
+
+#### Some Common Game Scripting Languages
+
+- 实现运行时游戏脚本系统有一个基本选择：选择一个第三方商业或开源语言并根据需求定制它，还是从零开始设计并实现一个定制语言
+- `QuakeC` Quake 的定制脚本语言，是一个解释性、命令性的过程编程语言，本质是直接挂入 Quake 引擎的 C 语言的一个简化变体，不支持指针或定义结构体，但是可以方便地操作实体（`entities`，Quake 中游戏对象的叫法），可用于发送和接收处理游戏事件。QuakeC 带给游戏玩家的权力是产生称为 mod 社区的一个因素，脚本语言和其它形式的数据驱动定制允许玩家将许多商业游戏变成各种新的游戏体验，从原始主题的微小修改到全新的游戏
+- `UnrealScript` Unreal 引擎完全定制的脚本语言，是解析性、命令性的面向对象语言，基于类似 C++ 的句法风格，支持 C 和 C++ 程序员习惯的大多数概念，还提供以下非常强大的游戏特色功能
+  - `Ability to Extend the Class Hierarchy` Unreal 整体类层次结构中的根类称为本地类（`native classes`），因为它们用本地 C++ 语言实现，但是 UnrealScript 可用于派生完全用脚本实现的新的类。对于本地 Unreal 类，UnrealScript 源文件（.uc 文件）代替 C++ 头文件（.h 文件）作为每个类的主要定义，UnrealScript 编译器实际上从 .uc 文件生成 .h 文件，程序员在常规 .cpp 文件中实现类
+  - `Latent Functions` 休眠函数，它的执行可能跨多个帧，可以执行一些指令然后睡眠等待一个事件或一段时间，相关事件发生或事件流逝时函数被引擎唤醒，从它停止的地方继续执行。这个特性对管理游戏中依赖于时间流逝的行为非常有用
+  - `Convenient Linkage to UnrealEd` 任何基于 UnrealScript 的类的数据成员可以使用简单注解选择标记，指示它可用于在 Unreal 世界编辑器中查看和编辑
+  - `Network Replication for Multiplayer Games` UnrealScript 中的独立数据元素可以标记为复制。在 Unreal 网络游戏中，每个游戏对象在一个特定机器上以完整形式存在，所有其它机器有该对象的一个轻量版本，称为远端代理（`remote proxy`），当一个数据成员标记为复制时，引擎把它从主对象复制到所有远端代理。这允许程序员或设计师轻松控制哪些数据跨网络可用，间接控制游戏所需网络带宽量
+- `Lua` 著名和流行的脚本语言，可以轻松集成到游戏引擎这样的应用程序
+  - 优点
+    - `Robust and mature` 健壮和成熟，已用于大量商业产品，包括 Adobe Photoshop Lightroom 和许多游戏，包括魔兽世界
+    - `Good documentation` 完整和易理解的参考手册以及一些书籍
+    - `Excellent runtime performance` Lua 执行它的字节码比许多其它脚本语言更快速更有效率
+    - `Portable` Lua 以可移植方式编写，使它易于适应新硬件平台，它可以跑在各种风格的 Windows、UNIX、移动设备和嵌入式微处理器上
+    - `Designed for embedded systems` Lua 的内存足迹很小，接收器和所有库大约 350 KiB
+    - `Simple, powerful and extensible` 核心 Lua 语言非常小和简单，但是他设计为支持以几乎无限的方式扩展它的核心功能的元机制，例如 Lua 本身不是面向对象的，但可以通过元机制添加 OOP 支持
+    - `Free` Lua 是开源的，根据非常自由的 MIT 许可证发布
+  - Lua 是动态类型语言，主要的数据结构是表（`table`），也称为关联数组（`associative array`），本质上是键值对的列表，优化了按键索引数组的能力
+  - Lua 为 C 语言提供方便的接口，Lua 虚拟机可以像 Lua 编写的函数那样方便地调用和操纵 C 编写的函数
+  - Lua 将称为块（`chunks`）的代码块视为可以由 Lua 程序本身操作的第一类对象
+  - Lua 代码可以用源代码格式执行，也可以用预编译字节码格式执行
+  - Lua 支持一些强大的高级编程结构，包括协同程序（`coroutines`）
+  - Lua 有一些陷阱，例如它灵活的函数绑定机制可能导致重要全局函数的重定义
+- `Python` 过程、面向对象、动态类型的脚本语言，设计为易于使用和集成到其他编程语言，并考虑灵活性，和 Lua 一样是游戏脚本语言的一个常见选择
+  - 一些最佳功能
+    - `Clear and readable syntax` Python 代码易读，部分因为强制特定缩进风格的语法
+    - `Reflective language` Python 包含强大的运行时内省功能
+    - `Object-oriented` OOP 内置于核心语言中，集成 Python 与游戏对象模型更容易
+    - `Modular` 支持分层包，鼓励干净的系统设计和好的封装
+    - `Exception-based error handling` 异常使 Python 的错误处理代码比不基于异常的语言更简单、优雅和本地化
+    - `Extensive standard libraries and third-party modules` 几乎可以想象的任何任务都存在 Python 库
+    - `Embeddable` Python 可以轻松嵌入应用程序，例如游戏引擎
+    - `Extensive documentation` 大量文档和教程
+  - Python 的主要数据结构是列表（`list`）、字典（`dictionary`）和类（`classes`）
+  - Python 支持鸭子类型（`duck typing`），它是一种动态类型，其中对象的功能接口决定它的类型，而不是由静态继承层次结构定义
+- `Pawn/Small/Small-C` Pawn 是轻量的、动态类型的、类似 C 的脚本语言，以前被称为 Small，是称为 Small-C 的早期 C 语言子集的一个演变。它是解释语言，源码编译为字节码，也称为 P-code。Pawn 的内存足占用很小，执行字节码非常快，还支持有限状态机，类似 C 的语法使 C/C++ 程序员容易学习，容易与 C 编写的游戏引擎集成，所以它非常适合许多游戏应用程序
+
+#### Architectures for Scripting
+
+- 脚本代码可以扮演游戏引擎中的各种角色
+  - `Scripted callbacks` 某些关键功能设计为可定制，通常通过钩子函数或回调实现
+  - `Scripted event handler` 实际上只是处理事件的特殊类型的钩子函数
+  - `Extending game object types, or defining new ones, with script` 一些脚本语言允许本地语言实现的游戏对象类型通过脚本扩展，这可以通过继承或组合完成
+  - `Scripted components or properties` 基于组件或属性的游戏对象模型中，新的组件或属性对象可以部分或完全由脚本构建，例如地牢围攻中有大约 148 个 Skrit 编写的脚本属性类型和 21 个本地 C++ 属性类型
+  - `Script-driven engine` 脚本可用于驱动整个引擎系统，例如游戏对象模型可以完全由脚本编写，只在需要底层引擎组件服务时调用本地引擎代码
+  - `Script-driven game` 一些引擎中脚本作为核心运行，本地引擎代码仅仅像一个库，被调用以访问引擎的特定高速特性，例如 Panda3D 引擎
+
+#### Features of a Runtime Game Scripting Language
+
+- 许多游戏脚本语言的主要目的是实现游戏功能，这通常通过增强和定制游戏对象模型实现
+- `Interface with the Native Programming Language` 运行时脚本语言虚拟机通常嵌入游戏引擎，引擎初始化虚拟机，执行所需脚本代码和管理这些脚本的执行
+  - 执行单位取决于语言语言的细节和游戏的实现
+    - 函数式脚本语言中，函数通常是主要执行单位，为了让引擎调用脚本函数，必须根据所需函数名称查找对应字节码，并且生成一个虚拟机来执行它，或者指示现有虚拟机这样做
+    - 面向对象脚本语言中，类通常是主要执行单位，这样的系统中，对象可以生成和销毁，方法或成员函数可以在单个类实例上调用
+  - 允许脚本和本地代码间的双向通信通常是有益的，因此大多数脚本语言也允许从脚本调用本地代码，实现它的基本方法通常是允许特定脚本函数用本地语言实现。例如 Python 类或模块的部分或全部成员函数可以用 C 函数实现，Python 维护一个称为方法表（`method table`）的数据结构，映射每个 Python 函数的名称与实现它的 C 函数的地址
+  - 顽皮狗的 DC 语言是 Scheme 语言的一个变体，DC 虚拟机中的函数调用栈实际上是一个寄存器库的栈，每个新函数获得它私有的寄存器库，这避免了函数调用和返回时保存和恢复寄存器的状态
+- `Game Object References` 脚本函数经常需要与游戏对象交互，它们本身可能部分或完全由引擎本地语言实现，本地语言引用对象的机制在脚本语言中不一定有效，因此脚本代码需要一些可靠方式引用游戏对象
+  - 脚本可以通过不透明数字句柄（`opaque numeric handles`）指向对象，句柄可以由引擎传递给脚本，也可以执行某种查询获取，脚本可以调用本地函数并传递对象的句柄作为参数来执行游戏对象上的操作。本地语言侧，该句柄可以转回成本地对象的指针。数字句柄简单且易于支持，但不直观且难以运作
+  - 可以使用字符串或哈希字符串 ID 作为对象句柄。对于后者，脚本语言需要以某种方式支持哈希字符串 ID，或者允许用户在脚本中使用字符串，运行时本地函数被调用时再转成哈希 ID
+  - 顽皮狗的 DC 脚本语言利用 Scheme 编程语言中的符号型（`symbols`）概念编码字符串 ID
+- `Receiving and Handling Events in Script` 事件通常发送到单个对象，在对象上下文中处理，因此，脚本事件处理器需要与对象以某种方式关联
+  - 一些引擎使用游戏对象类型系统，脚本事件处理器可以基于每对象类型注册，允许不同类型的游戏对象以不同的方式响应相同的事件，每个类型的所有实例以一致和统一的方式响应。事件处理器函数本身可以是简单的脚本函数或类的成员，通常被传递一个事件被发送到的特定对象的句柄，就像 C++ 成员函数被传递 this 指针
+  - 一些引擎中脚本事件处理器与单个对象而不是对象类型关联，允许相同类型的不同实例以不同方式响应相同事件
+  - 还有其它各种可能性，例如顽皮狗引擎中脚本本身就是对象，它们可以与单个游戏对象关联、附着于区域或单独存在，每个脚本可以有多个状态，每个状态可以有一个或多个事件处理器代码块，当游戏对象收到事件时，它可以选择在本地 C++ 中处理事件，还检查附着的脚本对象，如果存在，将事件发送到脚本的当前状态，如果当前状态有这个事件的事件处理器则调用它，否则忽略事件
+- `Sending Events` 理想地，我们希望可以从脚本发送预定义类型的事件和甚至在脚本中完全定义的新事件类型。一些游戏引擎中，事件或消息传递是脚本中对象间通信的唯一支持方式
+- `Object-Oriented Scripting Languages` 许多引擎中游戏通过某种面向对象的游戏对象模型实现
+  - `Defining Classes in Scripts` 任何允许定义新数据结构并提供方式存储和操作函数的脚本语言都可以实现类
+  - `Inheritance in Script` 有两种继承：从其它脚本类派生脚本类、从本地类派生脚本类。前者对于面向对象的脚本语言是开箱即用的，但是后者通常很难实现，UnrealScript 几乎是唯一的一个例子
+  - `Composition/Aggregation in Script` 可以使用组合或聚合而不是继承实现相似的效果，脚本需要一种方法定义类并将这些类的实例与那些用本地编程语言定义的对象关联。例如游戏对象收到事件时调用脚本组件的适当的事件处理器可以扩展本地实现的游戏对象的行为
+- `Scripted Finite State Machines` 一些引擎将有限状态机的概念构建到核心游戏对象模型中，每个游戏对象可以有一个或多个状态，每个状态包含更新函数、事件处理器函数等
+  - 如果引擎支持状态驱动的游戏对象模型，在脚本语言中提供有限状态机支持也是有意义的；即使核心游戏对象模型本地不支持有限状态机，仍然可以通过在脚本侧使用状态机提供状态驱动的行为
+  - 任何编程语言中的 FSM 可以通过使用类实例表示状态实现，但一些脚本语言提供专门用于此目的的工具，即使脚本语言没有提供这样的功能，也总是可以采用一个实现 FSM 的方法并在每个脚本中遵循这个约定
+- `Multithreaded Scripts` 能够并行执行多个脚本通常很有用。如果多个脚本可以同时执行，我们实际上提供脚本代码中的并行执行线程（`parallel threads of execution`）
+  - 大多数脚本系统通过协同多任务处理（`cooperative multitasking`）提供并行性，即脚本一直执行到它明确让步给其它脚本；与之相反的抢占式多任务处理（`preemptive multitasking`）中，任何脚本的执行可以随时被打断以允许其它脚本执行
+  - 脚本中协同多任务处理的一个简单方法是允许脚本显式睡眠，等待相关事情发生
+
+### Control High-Level Game Flow
+
+- 游戏对象模型只允许定义游戏世界中存在的对象的种类及各自的行为，而不说明玩家目标和完成目标时或失败时发生什么，因此需要某种系统控制高级游戏流程
+- 高级游戏流程通常实现为有限状态机
+- 顽皮狗使用的任务系统是基于状态机系统的一个例子，它允许状态（在顽皮狗称为任务）的线性序列。它还允许并行任务，一个任务分支成两个或更多并行任务，最终合并回主任务序列，这将顽皮狗任务图与常规状态机区分开来，因为状态机通常一次只能处于一种状态
+
+## More
+
+- `Some Engine Systems We Didn’t Cover` 未覆盖的一些引擎系统
+  - `Movie Player` 显示预先渲染电影的播放器，也称为全动态视频，基本组件为流文件 I/O  系统接口、解码压缩视频流的编解码器、与音轨的音频回放系统的某种形式的同步
+  - 许多不同视频编码标准和对应的编解码器可用，每个适合特定类型的应用程序。例如视频 CD 和 DVD 分别使用 MPEG-1 和 MPEG-2 (H.262) 编解码器；H.261 和 H.263 标准主要为在线视频会议应用程序设计；游戏通常使用 MPEG-4 第 2 部分（如 DivX）、MPEG-4 第 10 部分（H.264）、WMV 或 Bink Video 这样的标准
+  - `Multiplayer Networking` 多玩家网络
+- `Gameplay Systems` 在游戏基础层之上，是各种各样的类型和游戏特定的游戏系统，将无数的游戏引擎技术捆绑成一个整体，给游戏注入生命
+  - `Player Mechanics` 玩家机制，最重要的游戏系统。每个类型由玩家机制和游戏的总风格定义，一个类型中的每个游戏都有自己的特定设计，因此玩家机制是一个很大的主题，包含人机接口设备系统、动作模拟、碰撞检测、动画和音频的集成，以及与其它游戏系统的集成，如游戏镜头、武器、掩护、专门的横越机制如梯子或摆荡绳索、车辆系统、拼图机制等
+  - `Cameras` 游戏镜头系统几乎与玩家机制一样重要，3D 游戏中一些最常见的镜头类型如下
+    - `Look-at cameras` 关于目标点旋转，相对于这一点远近移动
+    - `Follow cameras` 在平台游戏、第三人称射击游戏和基于车辆的游戏中流行，聚焦于玩家角色，动作通常落后于玩家，还包括高级碰撞检测、回避逻辑，为玩家提供相对于玩家角色的镜头方向的某种程度的控制
+    - `First-person cameras` 保持贴在角色的虚拟眼睛上，玩家通常完全控制镜头方向
+    - `RTS cameras` 即时战略游戏往往使用漂浮在地形上的镜头，以一个角度向下看，可以在地形上平移，但镜头的俯仰和偏航通常不受玩家直接控制
+    - `Cinematic cameras` 镜头以更电影化的方式在场景中飞行，它的运动通常由动画师控制
+  - `Artificial Intelligence` 人工智能系统，大多数基于角色游戏的一个重要组件，通常以基本的路径发现（常利用 A* 算法）、感知系统（视线、视锥、对环境的了解等）和某种形式的记忆或知识为基础。在这些基础之上实现了角色控制逻辑，角色控制层之上 AI 系统通常有目标设置和决策逻辑，以及可能情绪状态建模、群体行为、一些高级功能如从过去的错误中汲取教训或适应变化环境的能力
+  - `Other Gameplay Systems` 可驾驶车辆、专门的武器装备、通过动态物理模拟的帮助破坏环境、玩家自己创建角色、自己构建自定义关卡、解决拼图等等
